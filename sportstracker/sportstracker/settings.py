@@ -14,7 +14,7 @@ import secrets
 import tempfile
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
-from .config import (DEFAULT_SATELLITE_ITEM, DEFAULT_SATELLITES, SATELLITE_MAX, DEFAULT_PICTURE, PICTURE_FITS, PICTURE_TRANSITIONS, SAFETY_MAX_TEMP, SAFETY_MIN_TEMP, DEFAULT_SAFETY, DEFAULT_CAMERA, DEFAULT_MATRIX, DEFAULT_MESSAGE, DEFAULT_SENSOR, IDLE_MODES, MESSAGE_ANIMATIONS,
+from .config import (DEFAULT_SATELLITE_ITEM, DEFAULT_SATELLITES, SATELLITE_MAX, DEFAULT_PICTURE, PICTURE_FITS, PICTURE_TRANSITIONS, SAFETY_MAX_TEMP, SAFETY_MIN_TEMP, DEFAULT_SAFETY, DEFAULT_CAMERA, DEFAULT_MATRIX, DEFAULT_MESSAGE, DEFAULT_SENSOR, IDLE_MODES, ROOM_DESIGNS, SATELLITE_DESIGNS, MESSAGE_ANIMATIONS,
                      MESSAGE_FONTS, MESSAGE_MAX_TEXT, MESSAGE_SPEEDS, SENSOR_GPIOS, Config, parse_config)
 from .errors import ConfigError
 from .leagues import CUSTOM_ID, find_league, get_league
@@ -216,6 +216,16 @@ def apply_message_form(raw: Dict[str, Any], form: Mapping[str, str]) -> Tuple[Di
     return new, errors
 
 
+ROOM_DESIGN_LABELS = {
+    "c": "C – Klima im Fokus (Temperatur groß, Feuchte-Balken, Komfort-Hinweis)",
+    "a": "A – Klassisch (große Digitaluhr, Datum, Symbole)",
+    "b": "B – Analoguhr (Zeigeruhr, Werte, Datum)",
+}
+SATELLITE_DESIGN_LABELS = {
+    "b": "B – Halbkreis-Anzeige (Luftindex im Bogen)",
+    "a": "A – Liste mit Segment-Balken",
+    "c": "C – Luftindex groß",
+}
 IDLE_MODE_LABELS = {
     "alternate": "Tabelle und Raumansicht im Wechsel",
     "table": "Nur Tabelle",
@@ -307,6 +317,8 @@ def config_to_values(cfg: Config) -> Dict[str, Any]:
     values["show_other_games"] = cfg.show_other_games
     values["gameday_results"] = cfg.gameday_results
     values["idle_mode"] = cfg.idle_mode
+    values["room_design"] = cfg.room_design
+    values["satellite_design"] = cfg.satellite_design
     values["idle_hide_table"] = cfg.idle_hide_table
     for key, _label, _lo, _hi in ROTATION_NUMBERS:
         values[key] = str(getattr(cfg, key))
@@ -431,6 +443,14 @@ def apply_form(raw: Dict[str, Any], form: Mapping[str, str]) -> Tuple[Dict[str, 
         errors.append("Spielfreie Zeit: bitte einen Eintrag aus der Liste wählen.")
     else:
         new["idle_mode"] = mode
+    for key, text, allowed in (("room_design", "Raumansicht", ROOM_DESIGNS), ("satellite_design", "Satellitenseite", SATELLITE_DESIGNS)):
+        if key not in form:
+            continue                                       # an older form without the field keeps the stored design
+        choice = form.get(key, "")
+        if choice not in allowed:
+            errors.append("%s: bitte ein Design aus der Liste wählen." % text)
+        else:
+            new[key] = choice
     for key, text, low, high in ROTATION_NUMBERS:
         value = _whole(form, key, text, low, high, errors)
         if value is not None:

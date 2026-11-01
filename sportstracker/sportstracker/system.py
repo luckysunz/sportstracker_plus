@@ -16,7 +16,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo, available_timezones
 
 SERVICES = ("sportstracker-data", "sportstracker-display", "sportstracker-sensor", "sportstracker-web", "sportstracker-safety",
-            "sportstracker-mqtt")
+            "sportstracker-mqtt", "sportstracker-wifi")
 SERVICE_LABELS = {
     "sportstracker-data": "Datendienst",
     "sportstracker-display": "Anzeigedienst",
@@ -24,6 +24,7 @@ SERVICE_LABELS = {
     "sportstracker-web": "Webdienst",
     "sportstracker-safety": "Sicherheitsdienst",
     "sportstracker-mqtt": "MQTT-Dienst (Satelliten)",
+    "sportstracker-wifi": "WLAN-Dienst (Setup-Hotspot)",
 }
 HOSTNAME_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$")
 SYSTEMCTL = "/usr/bin/systemctl"

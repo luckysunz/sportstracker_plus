@@ -73,6 +73,15 @@
 <select id="idle_mode" name="idle_mode">
 {% for mode, label in idle_modes.items() %}<option value="{{ mode }}" {% if mode == v.idle_mode %}selected{% endif %}>{{ label }}</option>{% endfor %}
 </select>
+<label for="room_design">Design der Raumansicht</label>
+<select id="room_design" name="room_design">
+{% for key, label in room_designs.items() %}<option value="{{ key }}" {% if key == v.room_design %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+<label for="satellite_design">Design der Satellitenseiten (Luftqualität)</label>
+<select id="satellite_design" name="satellite_design">
+{% for key, label in satellite_designs.items() %}<option value="{{ key }}" {% if key == v.satellite_design %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+<p class="hint">Die Vorschau auf der Übersicht zeigt das gewählte Design. Das Design gilt nur für Matrizen mit 64x64 Punkten.</p>
 <label class="check"><input type="checkbox" name="idle_hide_table" {% if v.idle_hide_table %}checked{% endif %}> Livingmodus ohne Tabelle (spielfreie Zeit ohne Tabelle: Raumansicht, Bild und Nachricht)</label>
 <p class="hint">Ist der Haken gesetzt, wird die Tabelle außerhalb von Spieltagen nicht gezeigt; „Nur Tabelle“ zeigt dann die Raumansicht. Hat das Lieblingsteam später noch ein Spiel, kommt die Ankündigung mit in den Wechsel. Der Endstand des Lieblingsteams bleibt bis Mitternacht stehen.</p>
 <div class="grid">

@@ -27,7 +27,7 @@ from .auth import AuthStore, LoginThrottle, password_problem
 from .banner import ANIMATIONS, FONT_CHOICES, SPEED_LABELS, BannerRenderer, preview_gif
 from .camera import CameraControl, CameraError, ImageOptions
 from .motion import PAUSE_OPTIONS, SENSITIVITY_LABELS, MotionSettings, pause_label
-from .config import (DEFAULT_SATELLITE_ITEM, MESSAGE_MAX_TEXT, SAFETY_MAX_TEMP, SAFETY_MIN_TEMP, SATELLITE_MAX,
+from .config import (parse_config, DEFAULT_SATELLITE_ITEM, MESSAGE_MAX_TEXT, SAFETY_MAX_TEMP, SAFETY_MIN_TEMP, SATELLITE_MAX,
                      SENSOR_GPIOS, Config, load_config)
 from .errors import ConfigError
 from .gallery import MB, Gallery, GalleryError, valid_name
@@ -44,12 +44,14 @@ from .safety import read_safety, safety_path
 from .satellites import (MAX_AGE_SECONDS as SAT_MAX_AGE, PayloadError, air_quality, parse_payload, read_satellites,
                          satellites_path, store_reading)
 from .sensor import read_sensor, sensor_path
-from .settings import (CAMERA_BRIGHTNESS, CAMERA_LIVE_FPS, CAMERA_LIVE_SIZES, CAMERA_PHOTO_SIZES, CAMERA_SHARPNESS, HARDWARE_MAPPINGS, IDLE_MODE_LABELS,
+from .settings import (CAMERA_BRIGHTNESS, CAMERA_LIVE_FPS, CAMERA_LIVE_SIZES, CAMERA_PHOTO_SIZES, CAMERA_SHARPNESS, HARDWARE_MAPPINGS, IDLE_MODE_LABELS, ROOM_DESIGN_LABELS, SATELLITE_DESIGN_LABELS,
                        MATRIX_NUMBERS, ROTATION_NUMBERS, apply_camera_form, apply_form, apply_message_form, apply_picture_form,
                        apply_satellites_form,
                        config_to_values,
                        form_to_values, load_raw, size_text, write_raw)
 from .state import read_state
+from .wifi import (check_credentials, hotspot_active, is_fresh as wifi_is_fresh, read_status as read_wifi_status,
+                   request_path as wifi_request_path, wifi_path, write_request as write_wifi_request)
 from .system import SERVICE_LABELS, SERVICES, SystemControl, timezone_names, valid_timezone
 from .views import plan as build_plan, render_view, view_for_item
 
@@ -211,7 +213,7 @@ def create_app(
             sent = request.form.get("csrf_token", "")
             if not sent or not hmac.compare_digest(sent, session.get("csrf", "")):
                 abort(400, "Ungültiges Formular-Token. Bitte die Seite neu laden und noch einmal versuchen.")
-        if request.endpoint not in ("login",) and not logged_in():
+        if request.endpoint not in ("login", "wifi_setup") and not logged_in():
             return redirect(url_for("login"))
         return None
 
@@ -361,7 +363,7 @@ def create_app(
         return dict(
             cfg=cfg, v=values, league_id=league_id, leagues=LEAGUES, teams=teams, mappings=HARDWARE_MAPPINGS,
             matrix_numbers=MATRIX_NUMBERS, zones=timezone_names(), rotation_numbers=ROTATION_NUMBERS,
-            idle_modes=IDLE_MODE_LABELS, sensor_gpios=SENSOR_GPIOS, safety_min=SAFETY_MIN_TEMP, safety_max=SAFETY_MAX_TEMP,
+            idle_modes=IDLE_MODE_LABELS, room_designs=ROOM_DESIGN_LABELS, satellite_designs=SATELLITE_DESIGN_LABELS, sensor_gpios=SENSOR_GPIOS, safety_min=SAFETY_MIN_TEMP, safety_max=SAFETY_MAX_TEMP,
             saved_league=config_to_values(cfg)["league"],
         )
 
@@ -924,6 +926,100 @@ def create_app(
             abort(404)
         flash("Foto gelöscht.", "ok")
         return redirect(url_for("camera_gallery_page"))
+
+    # -- WLAN (0.7.0) -----------------------------------------------------------
+
+    def wifi_context() -> Dict[str, Any]:
+        cfg = current_config()
+        data_dir = resolve(cfg.data_dir, root)
+        status = read_wifi_status(wifi_path(data_dir))
+        fresh = wifi_is_fresh(status, now_func())
+        return {"cfg": cfg, "status": status if fresh else None, "known": status is not None,
+                "networks": (status or {}).get("networks", []), "last_result": (status or {}).get("last_result"),
+                "pending": os.path.exists(wifi_request_path(data_dir))}
+
+    def wifi_credentials() -> Tuple[str, str, bool, Optional[str]]:
+        ssid = request.form.get("ssid", "").strip() or request.form.get("network", "").strip()
+        password = request.form.get("password", "")
+        problem = check_credentials(ssid, password)
+        return ssid, password, request.form.get("hidden", "") in ("on", "true", "1"), problem
+
+    @app.route("/wifi", methods=["GET"])
+    def wifi_page() -> Any:
+        return render_template("wifi.html", **wifi_context())
+
+    @app.route("/wifi/connect", methods=["POST"])
+    def wifi_connect() -> Any:
+        ssid, password, hidden, problem = wifi_credentials()
+        if problem:
+            flash(problem, "error")
+            return render_template("wifi.html", **wifi_context()), 400
+        context = wifi_context()
+        if context["status"] is None:
+            flash("Der WLAN-Dienst läuft nicht (sportstracker-wifi). Bitte auf der Seite System prüfen.", "error")
+            return render_template("wifi.html", **context), 503
+        write_wifi_request(wifi_request_path(resolve(context["cfg"].data_dir, root)), ssid, password, hidden, now_func())
+        flash("Anfrage gesendet. Der Sportstracker verbindet sich mit „%s“; das Ergebnis erscheint hier. "
+              "Bei einem anderen Netz ändert sich die Adresse, dann ist die Seite kurz nicht erreichbar." % ssid, "ok")
+        return redirect(url_for("wifi_page"))
+
+    @app.route("/wifi/settings", methods=["POST"])
+    def wifi_settings() -> Any:
+        cfg = current_config()
+        new_raw = load_raw(config_path)
+        wifi = dict(cfg.wifi)
+        wifi["enabled"] = request.form.get("enabled", "") in ("on", "true", "1")
+        wifi["hotspot_ssid"] = request.form.get("hotspot_ssid", "").strip()
+        wifi["hotspot_password"] = request.form.get("hotspot_password", "").strip()
+        if request.form.get("pin", "").strip():
+            wifi["pin"] = request.form["pin"].strip()
+        try:
+            wifi["grace_seconds"] = int(request.form.get("grace_seconds", "").strip())
+        except ValueError:
+            flash("Wartezeit: bitte eine ganze Zahl von 60 bis 3600 Sekunden eintragen.", "error")
+            return render_template("wifi.html", **wifi_context()), 400
+        try:
+            parse_config({"wifi": wifi})
+        except ConfigError as exc:
+            flash("Hotspot-Einstellungen ungültig: %s" % exc, "error")
+            return render_template("wifi.html", **wifi_context()), 400
+        new_raw["wifi"] = wifi
+        write_raw(config_path, new_raw)
+        flash("Hotspot-Einstellungen gespeichert.", "ok")
+        return redirect(url_for("wifi_page"))
+
+    @app.route("/wifi/setup", methods=["GET", "POST"])
+    def wifi_setup() -> Any:
+        """Setup page for the hotspot: no login, but only while the hotspot is up, and behind the PIN."""
+        cfg = current_config()
+        context = wifi_context()
+        if not hotspot_active(context["status"], now_func()):
+            return redirect(url_for("login"))
+        csrf_token()
+        key = "wifi:" + client_address()
+        if request.method == "POST":
+            wait = throttle.retry_after(key)
+            if wait > 0:
+                flash("Zu viele Fehlversuche. Bitte in %d Sekunden noch einmal versuchen." % int(wait + 1), "error")
+                return render_template("wifi_setup.html", unlocked=False, done=False, **context), 429
+            action = request.form.get("action", "")
+            if action == "pin":
+                if hmac.compare_digest(request.form.get("pin", "").strip(), cfg.wifi["pin"]):
+                    throttle.succeeded(key)
+                    session["wifi_unlocked"] = True
+                    return redirect(url_for("wifi_setup"))
+                throttle.failed(key)
+                flash("Die PIN ist falsch.", "error")
+                return render_template("wifi_setup.html", unlocked=False, done=False, **context), 401
+            if action == "connect" and session.get("wifi_unlocked"):
+                ssid, password, hidden, problem = wifi_credentials()
+                if problem:
+                    flash(problem, "error")
+                    return render_template("wifi_setup.html", unlocked=True, done=False, **context), 400
+                write_wifi_request(wifi_request_path(resolve(cfg.data_dir, root)), ssid, password, hidden, now_func())
+                return render_template("wifi_setup.html", unlocked=True, done=True, ssid=ssid, **context)
+            abort(400)
+        return render_template("wifi_setup.html", unlocked=bool(session.get("wifi_unlocked")), done=False, **context)
 
     # -- password ---------------------------------------------------------------
 

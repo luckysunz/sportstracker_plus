@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}WLAN – Sportstracker+{% endblock %}
+{% block head %}{% if pending %}<meta http-equiv="refresh" content="6">{% endif %}{% endblock %}
+{% block content %}
+<h1>WLAN</h1>
+
+<section>
+<h2>Status</h2>
+{% if status is none %}
+<p class="flash warning">{% if known %}Der WLAN-Dienst meldet sich nicht mehr (Status veraltet).{% else %}Noch kein Status vom WLAN-Dienst.{% endif %} Bitte auf der Seite System prüfen, ob „WLAN-Dienst“ läuft (nach einem Update einmal <code>sudo ./deploy/install.sh</code> ausführen).</p>
+{% else %}
+<table class="kv">
+<tr><th>Zustand</th><td>{% if status.mode == 'client' %}<span class="state-active">verbunden</span>{% elif status.mode == 'hotspot' %}<strong>Setup-Hotspot aktiv</strong>{% elif status.mode == 'offline' %}<span class="state-failed">nicht verbunden</span>{% else %}WLAN nicht verfügbar (NetworkManager fehlt?){% endif %}</td></tr>
+{% if status.connection %}<tr><th>Netzwerk</th><td>{{ status.connection }}</td></tr>{% endif %}
+{% if status.ip %}<tr><th>Adresse</th><td>{{ status.ip }}</td></tr>{% endif %}
+{% if status.mode == 'offline' %}<tr><th>Ohne Verbindung seit</th><td>{{ status.offline_seconds or 0 }} s (der Hotspot startet nach {{ cfg.wifi.grace_seconds }} s)</td></tr>{% endif %}
+</table>
+{% endif %}
+{% if pending %}<p class="hint">Die Anfrage wird gerade bearbeitet …</p>{% endif %}
+{% if last_result %}<p class="flash {{ 'ok' if last_result.ok else 'error' }}">{{ last_result.message }}</p>{% endif %}
+</section>
+
+<section>
+<h2>Mit einem anderen WLAN verbinden / Kennwort ändern</h2>
+<p class="hint">Gilt auch, wenn sich nur das Kennwort Ihres WLANs geändert hat: Netzwerk wählen, neues Kennwort eingeben. Schlägt die Verbindung fehl, bleibt oder kehrt der Sportstracker zum bisherigen Netz zurück.</p>
+{% set action = url_for('wifi_connect') %}
+{% include "_wifi_form.html" %}
+</section>
+
+<section>
+<h2>Setup-Hotspot</h2>
+<p class="hint">Ist das bekannte WLAN weg (neues Kennwort, Router getauscht, Umzug), öffnet der Sportstracker nach der Wartezeit ein eigenes WLAN. Die Matrix zeigt dann QR-Codes und die Adresse; mit dem Handy verbinden, <code>http://10.42.0.1:8080/wifi/setup</code> öffnen, PIN eingeben, Netz wählen. Raspberry Pi Zero 2 W: Hotspot und normales WLAN gehen nicht gleichzeitig, solange er offen ist, sind auch die Satelliten und Home Assistant nicht erreichbar.</p>
+<p class="flash warning">Die Voreinstellungen (PIN 1234, Hotspot-Kennwort setup1234) stehen im öffentlichen Quelltext. Bitte beides ändern.</p>
+<form method="post" action="{{ url_for('wifi_settings') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label class="check"><input type="checkbox" name="enabled" {% if cfg.wifi.enabled %}checked{% endif %}> Setup-Hotspot automatisch öffnen, wenn das WLAN fehlt</label>
+<div class="grid">
+<div><label for="hotspot_ssid">Name des Hotspots</label><input type="text" id="hotspot_ssid" name="hotspot_ssid" maxlength="32" value="{{ cfg.wifi.hotspot_ssid }}"></div>
+<div><label for="hotspot_password">Hotspot-Kennwort (8 bis 63 Zeichen)</label><input type="text" id="hotspot_password" name="hotspot_password" maxlength="63" value="{{ cfg.wifi.hotspot_password }}"></div>
+<div><label for="pin">Neue PIN für die Setup-Seite (4 bis 8 Ziffern)</label><input type="password" id="pin" name="pin" inputmode="numeric" maxlength="8" placeholder="leer = unverändert" autocomplete="off"></div>
+<div><label for="grace_seconds">Wartezeit ohne WLAN (Sekunden)</label><input type="number" id="grace_seconds" name="grace_seconds" min="60" max="3600" value="{{ cfg.wifi.grace_seconds }}"></div>
+</div>
+<p><button type="submit">Speichern</button></p>
+</form>
+</section>
+{% endblock %}

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Installs the six Sportstracker+ services (data, display, sensor, web, safety, mqtt) on the Raspberry Pi.
+# Installs the seven Sportstracker+ services (data, display, sensor, web, safety, mqtt, wifi) on the Raspberry Pi.
 #
 #   cd ~/sportstracker
 #   sudo ./deploy/install.sh                 # install or update (safe to run again)
@@ -21,7 +21,7 @@ if ! id "$APP_USER" >/dev/null 2>&1; then
 fi
 APP_HOME="$(getent passwd "$APP_USER" | cut -d: -f6)"
 VENV="${SPORTSTRACKER_VENV:-$APP_HOME/venv}"
-UNITS="sportstracker-data sportstracker-display sportstracker-sensor sportstracker-web sportstracker-safety sportstracker-mqtt"
+UNITS="sportstracker-data sportstracker-display sportstracker-sensor sportstracker-web sportstracker-safety sportstracker-mqtt sportstracker-wifi"
 
 if [ "${1:-}" = "--uninstall" ]; then
     for unit in $UNITS; do
@@ -61,6 +61,20 @@ if ! "$VENV/bin/python" -c "import paho.mqtt.client" 2>/dev/null; then
         echo "   paho-mqtt installiert (pip)"
     else
         echo "   paho-mqtt konnte nicht installiert werden - der MQTT-Dienst bleibt ohne Verbindung (HTTP-Satelliten gehen trotzdem)"
+    fi
+fi
+
+echo "== WLAN-Setup (Hotspot, optional)"
+if ! command -v nmcli >/dev/null 2>&1; then
+    echo "   NetworkManager (nmcli) fehlt - der WLAN-Dienst kann den Setup-Hotspot nicht starten (Bookworm hat ihn normalerweise)"
+fi
+if ! "$VENV/bin/python" -c "import qrcode" 2>/dev/null; then
+    if apt-get install -y python3-qrcode >/dev/null 2>&1 && "$VENV/bin/python" -c "import qrcode" 2>/dev/null; then
+        echo "   qrcode installiert (apt)"
+    elif "$VENV/bin/pip" install qrcode >/dev/null 2>&1; then
+        echo "   qrcode installiert (pip)"
+    else
+        echo "   qrcode konnte nicht installiert werden - die Matrix zeigt im Setup nur Text statt QR-Codes"
     fi
 fi
 
@@ -120,4 +134,4 @@ done
 IP="$(hostname -I | awk '{print $1}')"
 echo
 echo "Web-Backend: http://${IP:-<IP-des-Pi>}:8080   (Anmeldung admin / admin)"
-echo "Protokoll:   journalctl -u sportstracker-data -u sportstracker-display -u sportstracker-sensor -u sportstracker-web -u sportstracker-safety -u sportstracker-mqtt -f"
+echo "Protokoll:   journalctl -u sportstracker-data -u sportstracker-display -u sportstracker-sensor -u sportstracker-web -u sportstracker-safety -u sportstracker-mqtt -u sportstracker-wifi -f"

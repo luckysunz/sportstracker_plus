@@ -91,6 +91,15 @@ DEFAULT_MESSAGE: Dict[str, Any] = {
     "seconds": 10,             # time in the rotation (a scrolling text always gets at least one full pass)
 }
 
+# WLAN setup (0.7.0): when the known WLAN is gone the Pi opens a hotspot, see wifi.py / service_wifi.py.
+DEFAULT_WIFI = {
+    "enabled": True,                       # False: never open the hotspot
+    "hotspot_ssid": "Sportstracker-Setup",
+    "hotspot_password": "setup1234",       # WPA2 needs 8 to 63 characters
+    "pin": "1234",                         # asked on the setup page (4 to 8 digits); change it, the default is public
+    "grace_seconds": 180,                  # no WLAN for this long -> hotspot
+}
+
 # Picture mode (0.5.5, gallery since 0.6.0): up to 10 uploaded photos / animated GIFs in data/pictures/ (see picture.py).
 PICTURE_FITS = ("fill", "fit", "stretch")      # crop to fill / whole picture with black bars / distort to fill
 PICTURE_TRANSITIONS = ("none", "fade", "slide", "wipe", "random")
@@ -125,6 +134,8 @@ MESSAGE_MAX_TEXT = 200
 SENSOR_GPIOS = [25, 19, 14, 15, 2, 7, 8, 9, 10, 11]
 
 IDLE_MODES = ("alternate", "table", "room")
+ROOM_DESIGNS = ("a", "b", "c")                 # room view: a classic+ / b analog clock / c climate in focus
+SATELLITE_DESIGNS = ("a", "b", "c")            # satellite page: a list / b gauge / c air index large
 
 
 @dataclass
@@ -157,6 +168,8 @@ class Config:
     halftime_max_minutes: int = 15
     idle_hide_table: bool = False          # nothing live: never show the table (room view instead)
     idle_mode: str = "alternate"           # nothing live: table and room view in turns / only one of them
+    room_design: str = "c"                 # look of the room view (0.7.0), see roomviews.py
+    satellite_design: str = "b"            # look of the satellite pages (0.7.0)
     idle_table_seconds: int = 10
     idle_room_seconds: int = 10
     idle_kickoff_seconds: int = 10
@@ -166,6 +179,7 @@ class Config:
     safety: Dict[str, Any] = field(default_factory=lambda: dict(DEFAULT_SAFETY))
     picture: Dict[str, Any] = field(default_factory=lambda: copy.deepcopy(DEFAULT_PICTURE))
     satellites: Dict[str, Any] = field(default_factory=lambda: copy.deepcopy(DEFAULT_SATELLITES))
+    wifi: Dict[str, Any] = field(default_factory=lambda: copy.deepcopy(DEFAULT_WIFI))
     extra: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -196,6 +210,8 @@ _KNOWN = {
     "result_window_minutes",
     "halftime_max_minutes",
     "idle_mode",
+    "room_design",
+    "satellite_design",
     "idle_hide_table",
     "idle_table_seconds",
     "idle_room_seconds",
@@ -206,6 +222,7 @@ _KNOWN = {
     "safety",
     "picture",
     "satellites",
+    "wifi",
 }
 
 # key -> (minimum, maximum)
@@ -304,6 +321,11 @@ def parse_config(data: Dict[str, Any]) -> Config:
         if not isinstance(data["idle_hide_table"], bool):
             raise ConfigError("'idle_hide_table' must be true or false")
         cfg.idle_hide_table = data["idle_hide_table"]
+    for key, allowed in (("room_design", ROOM_DESIGNS), ("satellite_design", SATELLITE_DESIGNS)):
+        if key in data:
+            if data[key] not in allowed:
+                raise ConfigError("'%s' must be one of %s" % (key, ", ".join(allowed)))
+            setattr(cfg, key, data[key])
     if "idle_mode" in data:
         if data["idle_mode"] not in IDLE_MODES:
             raise ConfigError("'idle_mode' must be one of %s" % ", ".join(IDLE_MODES))
@@ -320,6 +342,8 @@ def parse_config(data: Dict[str, Any]) -> Config:
         cfg.picture = _parse_picture(data["picture"])
     if "satellites" in data:
         cfg.satellites = _parse_satellites(data["satellites"])
+    if "wifi" in data:
+        cfg.wifi = _parse_wifi(data["wifi"])
     cfg.extra = {k: v for k, v in data.items() if k not in _KNOWN}
     return cfg
 
@@ -405,6 +429,28 @@ def _parse_satellites(data: Any) -> Dict[str, Any]:
         items.append(item)
     sat["items"] = items
     return sat
+
+
+def _parse_wifi(data: Any) -> Dict[str, Any]:
+    if not isinstance(data, dict):
+        raise ConfigError("'wifi' must be an object")
+    wifi = dict(DEFAULT_WIFI)
+    wifi.update(data)
+    if not isinstance(wifi["enabled"], bool):
+        raise ConfigError("'wifi.enabled' must be true or false")
+    ssid = wifi["hotspot_ssid"]
+    if not isinstance(ssid, str) or not 1 <= len(ssid.encode("utf-8")) <= 32 or any(ord(ch) < 32 for ch in ssid):
+        raise ConfigError("'wifi.hotspot_ssid' must be 1 to 32 characters")
+    password = wifi["hotspot_password"]
+    if not isinstance(password, str) or not 8 <= len(password) <= 63 or any(ord(ch) < 32 for ch in password):
+        raise ConfigError("'wifi.hotspot_password' must be 8 to 63 characters")
+    pin = wifi["pin"]
+    if not isinstance(pin, str) or not pin.isdigit() or not 4 <= len(pin) <= 8:
+        raise ConfigError("'wifi.pin' must be 4 to 8 digits (as text)")
+    grace = wifi["grace_seconds"]
+    if not isinstance(grace, int) or isinstance(grace, bool) or not 60 <= grace <= 3600:
+        raise ConfigError("'wifi.grace_seconds' must be a whole number from 60 to 3600")
+    return wifi
 
 
 def _number(value: Any) -> bool:

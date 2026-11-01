@@ -1,6 +1,6 @@
-# Sportstracker+ (Stand 0.6.0: Datenschicht, Renderer, sechs Dienste, Web-Backend, Raumklima, Kamera, Bild-Galerie, Satelliten)
+# Sportstracker+ (Stand 0.7.0: Datenschicht, Renderer, sieben Dienste, Web-Backend, Raumklima, Kamera, Bild-Galerie, Satelliten, wählbare Designs, WLAN-Setup)
 
-Ligadaten auf einer RGB-LED-Matrix: laufende Spiele der Liga, Ergebniskarten, sonst Tabelle und Raumansicht. Sechs Dienste (Daten, Anzeige, Sensor, Web, Sicherheit, MQTT) laufen unter systemd; Installation siehe Abschnitt „Dauerbetrieb".
+Ligadaten auf einer RGB-LED-Matrix: laufende Spiele der Liga, Ergebniskarten, sonst Tabelle und Raumansicht. Sieben Dienste (Daten, Anzeige, Sensor, Web, Sicherheit, MQTT, WLAN) laufen unter systemd; Installation siehe Abschnitt „Dauerbetrieb".
 
 ## Provider
 
@@ -71,6 +71,20 @@ Seite „Bild“ im Backend: bis zu 10 Bilder (JPEG, PNG, GIF, WebP, je bis 10 M
 ## Satelliten: Raumklima aus dem Heimnetz (0.6.0)
 
 Bis zu drei ESP32-Satelliten (DHT22 + MQ-135, Sketch unter `esp32/`, Anleitung `esp32/README.md`) liefern Temperatur, Feuchte, Gas-Rohwert und Luftindex. Zwei Wege: HTTP `POST /api/satellite/<schluessel>` (Token per `Authorization: Bearer` oder `X-Token`, ohne Anmeldung/CSRF, höchstens 2 KB) und MQTT (`service_mqtt.py`, Dienst `sportstracker-mqtt`, `paho-mqtt` 1.x/2.x, Topic `<base_topic>/<schluessel>/state` oder eigenes Topic je Satellit; der Sketch meldet sich zusätzlich per Home-Assistant-Discovery an). `satellites.py` prüft die Nutzdaten (`parse_payload`), berechnet den Luftindex aus dem Gas-Rohwert (`air_quality`: linear zwischen `gas_clean` 800 und `gas_bad` 2500; ab 70 GUT, ab 40 MITTEL, sonst SCHLECHT) und schreibt `data/satellites.json` (`store_reading`, Dateisperre, atomar, fehlende Werte bleiben erhalten). Werte älter als 600 s gelten als veraltet (Striche). `render.render_satellite` zeichnet je Satellit eine Matrixseite; `views.plan` hängt sie nach der Raumansicht an die Leerlaufliste. Backend-Seite „Satelliten“ (`/satellites`, Token wird automatisch erzeugt, MQTT-Kennwort bleibt bei leerem Feld erhalten). Konfiguration im Abschnitt `satellites` (`enabled`, `seconds`, `mqtt{enabled,host,port,username,password,base_topic}`, `items[{enabled,key,name,token,topic,gas_clean,gas_bad}]`).
+
+## Designs der Raumansicht und der Satellitenseiten (0.7.0)
+
+Einstellungen → Spielfreie Zeit: `room_design` (`c` Klima im Fokus = Standard, `a` Klassisch mit großer Digitaluhr, `b` Analoguhr) und `satellite_design` (`b` Halbkreis-Anzeige = Standard, `a` Liste mit Segment-Balken, `c` Luftindex groß). Die Zeichenfunktionen stehen in `roomviews.py` (nur für 64x64; andere Panelgrößen behalten das schlichte Layout). Design C zeigt einen Komfortpunkt (grün/gelb/rot) und einen Hinweis (KOMFORT, ZU FEUCHT, ZU TROCKEN, ZU WARM, ZU KÜHL), Bereich 20–24 °C und 40–60 % Luftfeuchte. Ohne frischen Messwert erscheinen Striche. Der Luftindex des MQ-135 ist ein relativer Wert (0–100), keine ppm.
+
+## WLAN-Setup: Hotspot, wenn das WLAN fehlt (0.7.0)
+
+Neuer Dienst `sportstracker-wifi` (root, NetworkManager/`nmcli`, Bookworm-Standard). Ist der Pi `wifi.grace_seconds` (Standard 180 s) ohne WLAN, öffnet er den Hotspot `Sportstracker-Setup` (Kennwort `setup1234`, WPA2 verlangt mindestens 8 Zeichen). Die Matrix zeigt abwechselnd (je 6 s) einen QR-Code zum Verbinden, einen QR-Code der Setup-Seite und den Text mit Adresse. Am Handy `http://10.42.0.1:8080/wifi/setup` öffnen, PIN (Standard `1234`) eingeben, Netz wählen, Kennwort eintragen. Danach schließt der Hotspot; klappt die Verbindung nicht, kommt er zurück und die Seite nennt den Grund. Ohne Bedienung sucht der Dienst alle 10 Minuten nach dem alten WLAN (nur wenn niemand mit dem Hotspot verbunden ist).
+
+- Im Web-Backend gibt es die Seite **WLAN**: Status, Netz wechseln oder Kennwort ändern (auch im laufenden Betrieb), Hotspot-Name, Hotspot-Kennwort, PIN und Wartezeit. **PIN und Hotspot-Kennwort ändern: die Voreinstellungen stehen im öffentlichen Quelltext.**
+- Das Web-Backend bekommt keine Netzwerk-Rechte: es schreibt eine Anfrage (`data/wifi_request.json`, nur für den Benutzer lesbar), der Dienst führt sie aus und löscht sie. Status: `data/wifi.json`.
+- Die Setup-Seite gibt es nur, solange der Hotspot aktiv ist; falsche PIN-Eingaben werden gebremst (5 Fehlversuche, dann 60 s Pause je Gerät).
+- Grenzen: Der Pi Zero 2 W hat ein Funkmodul; solange der Hotspot offen ist, sind WLAN, Satelliten und Home Assistant nicht erreichbar. QR-Codes brauchen `python3-qrcode` (der Installer versucht es, sonst nur Text).
+- Zusätzliche Absicherung ohne Code: Zweitnetz (z. B. Handy-Hotspot) mit niedrigerer Priorität speichern: `sudo nmcli connection modify "<Name>" connection.autoconnect-priority 5`.
 
 ## Temperaturschutz (0.5.4)
 

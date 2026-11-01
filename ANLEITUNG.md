@@ -1,4 +1,4 @@
-# Anleitung: Sportstracker+ auf den Pi übertragen (Stand 0.6.0)
+# Anleitung: Sportstracker+ auf den Pi übertragen (Stand 0.7.0)
 
 Die wichtigsten Alltagsbefehle (Start/Stopp, Fehlersuche, scp) stehen kurz in `BEDIENUNG.md`.
 
@@ -295,6 +295,24 @@ Neue Dateien: `sportstracker/satellites.py`, `sportstracker/service_mqtt.py`, `s
 * **Alle Ergebnisse des Tages**: Unter **Einstellungen → Spieltag-Anzeige** gibt es den Haken „Alle Ergebnisse des Spieltags bis Mitternacht zeigen“ (Standard an). Beendete Spiele des Tages bleiben bis Mitternacht als Ergebniskarten stehen (Lieblingsteam zuerst). Sobald kein Spiel mehr läuft, wechseln Ergebnisse und Tabelle (dazu Raumansicht je Auswahl „Spielfreie Zeit“, Nachricht, Bild). Während ein Spiel läuft, bleibt es im Vordergrund, die Ergebnisse wechseln mit ihm. Ohne Haken: wie früher (Karte 30 Minuten, Endstand des Lieblingsteams bis Mitternacht).
 * **Späte RBBL-Ergebnisse**: Genius liefert bei der RBBL oft keinen Live-Stand; die Ergebnisse stehen erst nach dem Spiel im Spielplan. Der Spielplan wird deshalb von 10 Minuten vor Beginn bis 5 Stunden danach jede Minute geladen, sonst alle 10 Minuten. Ein Platzhalter „0:0“ wird nicht mehr angezeigt, solange kein Stand vorliegt (Anzeige „-:-“).
 * Nur `sportstracker-web`, `sportstracker-data` und `sportstracker-display` neu starten (kein `install.sh` nötig).
+
+## 5l. Designs und WLAN-Setup (ab Version 0.7.0)
+
+Einmalig nach dem Übertragen: `cd ~/sportstracker && sudo ./deploy/install.sh` (legt den siebten Dienst `sportstracker-wifi` an, installiert `python3-qrcode`, ergänzt die sudo-Regel).
+
+**Designs:** Backend → Einstellungen → Spielfreie Zeit: „Design der Raumansicht“ (C Klima im Fokus, A Klassisch, B Analoguhr) und „Design der Satellitenseiten“ (B Halbkreis, A Liste, C Luftindex groß). Die Vorschau auf der Übersicht zeigt das Ergebnis sofort.
+
+**WLAN-Setup:** Backend → WLAN. Dort **zuerst PIN und Hotspot-Kennwort ändern** (Voreinstellung 1234 / setup1234). Prüfen: `nmcli -t -f RUNNING general` muss `running` zeigen, `journalctl -u sportstracker-wifi -f` zeigt den Ablauf.
+
+Wenn sich das WLAN-Kennwort geändert hat und der Pi nicht mehr erreichbar ist:
+1. Nach etwa 3 Minuten zeigt die Matrix einen QR-Code. Mit der Handykamera scannen und mit `Sportstracker-Setup` verbinden (oder von Hand mit dem Kennwort verbinden).
+2. Im Handy-Browser `http://10.42.0.1:8080/wifi/setup` öffnen (zweiter QR-Code), PIN eingeben.
+3. Das eigene Netz wählen (oder bei einem versteckten Netz den Namen eintragen), neues Kennwort eingeben, „Verbinden“. Das Handy verliert dabei den Hotspot; nach etwa 20 Sekunden zeigt die Matrix wieder die normale Anzeige.
+4. Falsches Kennwort: der Hotspot erscheint nach etwa einer Minute wieder, die Setup-Seite zeigt „Letzter Versuch: …“.
+
+Test ohne Ausfall: Backend → WLAN → Wartezeit auf 60 s stellen, im Router das WLAN-Kennwort des Pi kurz sperren oder `sudo nmcli device disconnect wlan0` ausführen; nach Ablauf muss der Hotspot erscheinen. Danach Wartezeit zurück auf 180 s.
+
+Nicht auf echter Hardware geprüft: Hotspot auf dem Pi Zero 2 W (Dnsmasq im NetworkManager), Lesbarkeit der QR-Codes auf dem Panel (Helligkeit, Abstand 30 bis 50 cm), Verhalten bei verstecktem WLAN.
 
 ## 6. Dateien vom Pi zurückholen (falls nötig)
 

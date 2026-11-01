@@ -1,0 +1,16 @@
+<form method="post" action="{{ action }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="action" value="connect">
+<label for="network">Gefundene Netzwerke</label>
+<select id="network" name="network">
+{% for n in networks %}<option value="{{ n.ssid }}">{{ n.ssid }} ({{ n.signal }} %{% if n.secured %}, geschützt{% endif %})</option>{% endfor %}
+<option value="">anderes Netzwerk (Name unten eintragen)</option>
+</select>
+<label for="ssid">Netzwerkname (nur für ein Netz, das nicht in der Liste steht)</label>
+<input type="text" id="ssid" name="ssid" maxlength="32" autocomplete="off" autocapitalize="off">
+<label for="password">WLAN-Kennwort</label>
+<input type="password" id="password" name="password" autocomplete="off">
+<label class="check"><input type="checkbox" name="hidden"> Verstecktes Netzwerk (Name wird nicht ausgesendet)</label>
+<p class="hint">Die Liste stammt von der letzten Suche des Sportstrackers. Das Kennwort wird nur an den Sportstracker gesendet und dort im Netzwerkmanager gespeichert.</p>
+<button type="submit">Verbinden</button>
+</form>

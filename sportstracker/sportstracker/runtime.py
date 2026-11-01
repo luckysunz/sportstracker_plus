@@ -50,6 +50,8 @@ def build_renderer(cfg: Config, logos: Any, tz: Any, root: str = PROJECT_ROOT, f
         show_team_names=cfg.show_team_names, show_game_clock=cfg.show_game_clock,
         table_logo_size=cfg.table_logo_size, table_label=cfg.table_label, cities=cfg.team_cities,
     )
+    renderer.room_design = cfg.room_design
+    renderer.satellite_design = cfg.satellite_design
     renderer.banner = BannerRenderer(resolve(cfg.fonts_dir, root), width, height)
     renderer.picture = PictureRenderer(resolve(cfg.data_dir, root), width, height)
     return renderer

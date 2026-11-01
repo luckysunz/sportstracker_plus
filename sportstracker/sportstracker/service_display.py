@@ -20,6 +20,8 @@ import sys
 import threading
 from datetime import datetime, timezone
 from typing import Any, Callable, Optional
+
+from PIL import Image
 from zoneinfo import ZoneInfo
 
 from .banner import FRAME_INTERVAL, is_animated
@@ -30,6 +32,8 @@ from .runtime import PROJECT_ROOT, build_logo_cache, build_renderer, resolve, st
 from .satellites import read_satellites, satellites_path
 from .sensor import read_sensor, sensor_path
 from .state import read_state
+from .wifi import hotspot_active, read_status as read_wifi_status, wifi_path
+from .wifi_screen import page_at, qr_modules, render_setup
 from .views import plan as build_plan, render_view, view_for_item
 
 log = logging.getLogger("sportstracker.display")
@@ -64,6 +68,9 @@ class DisplayService:
         self._reading: Any = None
         self._sat_mtime = -1.0
         self._sats: Any = {}
+        self._wifi_mtime = -1.0
+        self._wifi: Any = None
+        self._have_qr: Optional[bool] = None
         self.current_plan: Any = None
         self._last_context: Any = None
         self._last_frame = ""
@@ -124,7 +131,14 @@ class DisplayService:
         if sat_mtime != self._sat_mtime:
             self._sats = read_satellites(sat_file)
             self._sat_mtime = sat_mtime
+        wifi_file = wifi_path(resolve(self.cfg.data_dir, self.root))
+        wifi_mtime = self._mtime(wifi_file)
+        if wifi_mtime != self._wifi_mtime:
+            self._wifi = read_wifi_status(wifi_file)
+            self._wifi_mtime = wifi_mtime
         now = self._now()
+        if hotspot_active(self._wifi, now) and isinstance(self._wifi.get("hotspot"), dict):
+            return self._show_wifi_setup(now)
         stale_after = 2 * self.cfg.poll_idle_seconds + 60
         self.current_plan = build_plan(self._state, now, self.cfg, self.tz, stale_after,
                                        picture=self.renderer.picture.available(),
@@ -167,6 +181,27 @@ class DisplayService:
         self._display.show(image)
         self.frames_shown += 1
         log.info("showing %s view", view.kind)
+        return True
+
+    def _show_wifi_setup(self, now: datetime) -> bool:
+        """The setup hotspot is up: QR codes and the address replace the normal rotation until it is gone."""
+        assert self.renderer is not None
+        if self._have_qr is None:
+            self._have_qr = qr_modules("x") is not None
+        hotspot = self._wifi["hotspot"]
+        page = page_at(now.timestamp(), self._have_qr)
+        self.wait_seconds = 1.0
+        self._animating = False
+        context = ("wifi-setup", page, hotspot.get("ssid"), hotspot.get("password"))
+        if context == self._last_context:
+            return False
+        self._last_context = context
+        self._last_frame = ""                  # the normal picture must be drawn again when the hotspot ends
+        image = Image.new("RGB", (self.renderer.width, self.renderer.height), (0, 0, 0))
+        render_setup(image, self.renderer.fonts, self.renderer.theme, hotspot, page)
+        self._display.show(image)
+        self.frames_shown += 1
+        log.info("showing WLAN setup page %d", page)
         return True
 
     # -- loop -------------------------------------------------------------------

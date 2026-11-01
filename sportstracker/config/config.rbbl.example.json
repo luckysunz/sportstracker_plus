@@ -89,5 +89,14 @@
     "items": []
   },
   "idle_hide_table": false,
-  "gameday_results": true
+  "gameday_results": true,
+  "room_design": "c",
+  "satellite_design": "b",
+  "wifi": {
+    "enabled": true,
+    "hotspot_ssid": "Sportstracker-Setup",
+    "hotspot_password": "setup1234",
+    "pin": "1234",
+    "grace_seconds": 180
+  }
 }

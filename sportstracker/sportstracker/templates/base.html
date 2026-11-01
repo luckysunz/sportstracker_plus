@@ -57,6 +57,7 @@ pre.log { background:var(--bg); border:1px solid var(--line); border-radius:6px;
 <a href="{{ url_for('message_form') }}">Nachricht</a>
 <a href="{{ url_for('picture_form') }}">Bild</a>
 <a href="{{ url_for('satellites_form') }}">Satelliten</a>
+<a href="{{ url_for('wifi_page') }}">WLAN</a>
 {% if camera_enabled() %}<a href="{{ url_for('camera_page') }}">Kamera</a>{% endif %}
 <a href="{{ url_for('system_page') }}">System</a>
 <a href="{{ url_for('password') }}">Zugang</a>

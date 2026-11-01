@@ -139,8 +139,11 @@ class RenderTests(unittest.TestCase):
         colors = {image.getpixel((x, y)) for x in range(64) for y in range(64)}
         for expected in (self.r.theme.room_temperature, self.r.theme.room_humidity, self.r.theme.air_good):
             self.assertIn(expected, colors)
-        bar = [image.getpixel((x, 61)) for x in range(4, 60)]
-        self.assertEqual(bar.count(self.r.theme.air_good), 48)                                   # 85 % of 56 px
+        self.r.satellite_design = "a"                                                            # list with segment bar
+        listing = self.r.render_satellite("Wohnzimmer", reading, (85, "GUT"))
+        bar = [listing.getpixel((x, 58)) for x in range(64)]
+        self.assertEqual(bar.count(self.r.theme.air_good), 40)                                   # 4 of 5 segments, 10 px each
+        self.r.satellite_design = "b"
         bad = self.r.render_satellite("Bad", reading, (10, "SCHLECHT"))
         self.assertIn(self.r.theme.air_bad, {bad.getpixel((x, y)) for x in range(64) for y in range(64)})
 

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}WLAN einrichten – Sportstracker+{% endblock %}
+{% block content %}
+<h1>WLAN einrichten</h1>
+{% if done %}
+<section>
+<h2>Verbindung wird hergestellt</h2>
+<p>Der Sportstracker verbindet sich jetzt mit „{{ ssid }}“. Dabei wird dieser Setup-Hotspot beendet, Ihr Handy verliert die Verbindung.</p>
+<p class="hint">Klappt es, zeigt die Matrix wieder die normale Anzeige; das Handy verbindet sich dann wieder mit Ihrem WLAN. Klappt es nicht (falsches Kennwort), erscheint der Hotspot nach etwa einer Minute wieder und diese Seite nennt den Grund.</p>
+</section>
+{% elif not unlocked %}
+<section>
+<h2>PIN eingeben</h2>
+<form method="post" action="{{ url_for('wifi_setup') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="action" value="pin">
+<label for="pin">PIN</label>
+<input type="password" id="pin" name="pin" inputmode="numeric" maxlength="8" autocomplete="off" autofocus>
+<p><button type="submit">Weiter</button></p>
+</form>
+</section>
+{% else %}
+{% if last_result %}<p class="flash {{ 'ok' if last_result.ok else 'error' }}">Letzter Versuch: {{ last_result.message }}</p>{% endif %}
+<section>
+<h2>WLAN wählen</h2>
+{% set action = url_for('wifi_setup') %}
+{% include "_wifi_form.html" %}
+</section>
+{% endif %}
+{% endblock %}

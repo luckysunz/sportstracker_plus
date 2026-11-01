@@ -36,7 +36,7 @@ Nach dem Übertragen (auf dem Pi):
 # Nur Code/Vorlagen geändert:
 sudo systemctl restart sportstracker-web sportstracker-display
 
-# Neue Dienste/Dienstdateien (z. B. erstmals 0.6.0) oder sudo-Regel:
+# Neue Dienste/Dienstdateien (z. B. erstmals 0.6.0 oder 0.7.0 für den WLAN-Dienst) oder sudo-Regel:
 cd ~/sportstracker && sudo bash deploy/install.sh
 ```
 
@@ -44,14 +44,14 @@ Bei „Permission denied" auf `.pyc`-Dateien: `sudo find ~/sportstracker -name _
 
 ## 3. Dienste starten, stoppen, neu starten
 
-Dienste: `sportstracker-data`, `sportstracker-display`, `sportstracker-sensor`, `sportstracker-web`, `sportstracker-safety`, `sportstracker-mqtt`
+Dienste: `sportstracker-data`, `sportstracker-display`, `sportstracker-sensor`, `sportstracker-web`, `sportstracker-safety`, `sportstracker-mqtt`, `sportstracker-wifi`
 
 ```bash
 sudo systemctl restart sportstracker-display          # einen Dienst neu starten
 sudo systemctl stop sportstracker-display             # anhalten (Matrix wird dunkel)
 sudo systemctl start sportstracker-display            # starten
 
-# alle fünf wichtigen auf einmal
+# die wichtigsten auf einmal (der WLAN-Dienst muss bei Anzeigeproblemen nicht mit)
 sudo systemctl restart sportstracker-data sportstracker-display sportstracker-sensor sportstracker-web sportstracker-mqtt
 sudo systemctl stop sportstracker-data sportstracker-display sportstracker-sensor sportstracker-web sportstracker-mqtt
 
@@ -71,7 +71,7 @@ sudo systemctl start sportstracker-display
 ## 4. Status prüfen
 
 ```bash
-systemctl is-active sportstracker-data sportstracker-display sportstracker-sensor sportstracker-web sportstracker-safety sportstracker-mqtt
+systemctl is-active sportstracker-data sportstracker-display sportstracker-sensor sportstracker-web sportstracker-safety sportstracker-mqtt sportstracker-wifi
 systemctl status sportstracker-display --no-pager
 systemctl --failed                                    # alle fehlgeschlagenen Dienste
 vcgencmd measure_temp                                 # CPU-Temperatur (Abschaltung bei 84 °C)
@@ -89,6 +89,7 @@ journalctl -u sportstracker-web -n 100 --no-pager
 journalctl -u sportstracker-data -n 100 --no-pager
 journalctl -u sportstracker-sensor -n 100 --no-pager
 journalctl -u sportstracker-mqtt -n 100 --no-pager
+journalctl -u sportstracker-wifi -n 100 --no-pager      # WLAN-Dienst / Setup-Hotspot
 journalctl -p err -b --no-pager                         # alle Fehler seit dem Start
 ```
 
@@ -99,6 +100,7 @@ journalctl -p err -b --no-pager                         # alle Fehler seit dem S
 | Web-Backend nicht erreichbar | `ping 192.168.22.22`; `systemctl status sportstracker-web`; Port: `ss -tlnp \| grep 8080` |
 | Änderung im Backend wirkt nicht | `sudo systemctl restart sportstracker-web sportstracker-display` |
 | Raumwerte zeigen Striche | Log von `sportstracker-sensor`; DHT22 im Backend aktiviert? Werte älter als 5 Minuten werden als Striche gezeigt |
+| Matrix zeigt QR-Code "WLAN-SETUP" | Der Pi hat sein WLAN verloren: Handy mit `Sportstracker-Setup` verbinden, `http://10.42.0.1:8080/wifi/setup`, PIN eingeben (ANLEITUNG 5l) |
 | Satellit zeigt Striche | Werte älter als 10 Minuten; `cat ~/sportstracker/data/satellites.json`; Log von `sportstracker-mqtt`; Token/Schlüssel/WLAN des ESP32 prüfen |
 | Kamera | `rpicam-hello --list-cameras`; `dmesg \| grep -i imx219`; Flachbandkabel prüfen |
 | Pi schaltete sich ab | Backend-Übersicht (Warnung) oder `cat ~/sportstracker/data/safety.json` – Gehäuse/Lüftung prüfen |

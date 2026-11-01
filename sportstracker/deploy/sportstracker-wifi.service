@@ -1,0 +1,18 @@
+[Unit]
+Description=Sportstracker WLAN service (setup hotspot when the WLAN is gone)
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=simple
+# Controls NetworkManager (nmcli), needs root.
+User=root
+WorkingDirectory=@DIR@
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=@VENV@/bin/python -m sportstracker.service_wifi --config @DIR@/config/config.json
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -20,6 +20,7 @@ from PIL import Image
 
 from .bdf import BdfFont, load_bdf
 from .models import Game, GameStatus, TableRow, Team
+from .roomviews import draw_room, draw_satellite
 from .sensor import SensorReading
 
 Color = Tuple[int, int, int]
@@ -60,6 +61,8 @@ class Theme:
     air_mid: Color = (255, 190, 0)
     air_bad: Color = (255, 40, 30)
     air_unknown: Color = (90, 90, 90)
+    dim: Color = (60, 60, 60)             # unlit parts of bars, rings and dividers
+    date: Color = (110, 110, 110)         # date line and scale marks
 
 
 # ---------------------------------------------------------------------------
@@ -232,6 +235,8 @@ class Renderer:
         self.cities = cities or {}
         self.banner: Optional[Any] = None   # message mode (banner.BannerRenderer), set by runtime.build_renderer
         self.picture: Optional[Any] = None  # picture mode (picture.PictureRenderer), set by runtime.build_renderer
+        self.room_design = "c"              # set by runtime.build_renderer from the configuration
+        self.satellite_design = "b"
 
     # -- helpers ----------------------------------------------------------------
 
@@ -375,6 +380,11 @@ class Renderer:
         clock_h = self.fonts.big.height * scale
         font = self.fonts.big
         cx = self.width // 2
+        if show_climate and (self.width, self.height) == (64, 64):
+            fresh = reading is not None and reading.temperature_c is not None and reading.humidity_pct is not None
+            draw_room(image, self.fonts, t, local, reading.temperature_c if fresh else None,
+                      reading.humidity_pct if fresh else None, self.room_design)
+            return image
         if not show_climate:
             self._draw_clock(image, local.strftime("%H:%M"), cx, (self.height - clock_h) // 2, scale)
             return image
@@ -415,6 +425,11 @@ class Renderer:
         self._centered(image, self.fonts.big, cx, self._v(17), temp, t.room_temperature)
         self._centered(image, self.fonts.big, cx, self._v(30), humidity, t.room_humidity)
         if quality is None:
+            return image
+        if (self.width, self.height) == (64, 64):
+            image = self._blank()
+            draw_satellite(image, self.fonts, t, name, reading.temperature_c if fresh else None,
+                           reading.humidity_pct if fresh else None, quality, self.satellite_design)
             return image
         index, label = quality
         color = t.air_good if index >= 70 else t.air_mid if index >= 40 else t.air_bad
