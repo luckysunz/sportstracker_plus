@@ -142,6 +142,17 @@ class Nmcli:
                 return Link(fields[0], fields[2], fields[3])
         return None
 
+    def ssid(self, device: str) -> str:
+        """Name of the network the device is joined to (the profile name can differ, e.g. ``preconfigured``)."""
+        code, out = self._run(["-t", "-f", "ACTIVE,SSID", "device", "wifi", "list", "ifname", device, "--rescan", "no"])
+        if code != 0:
+            return ""
+        for line in out.splitlines():
+            fields = split_terse(line)
+            if len(fields) >= 2 and fields[0] == "yes":
+                return fields[1]
+        return ""
+
     def ip_address(self, device: str) -> str:
         code, out = self._run(["-t", "-g", "IP4.ADDRESS", "device", "show", device])
         if code != 0 or not out:
@@ -178,7 +189,7 @@ class Nmcli:
             if len(fields) < 2 or fields[1] != "802-11-wireless" or fields[0] == HOTSPOT_CONNECTION:
                 continue
             code2, ssid = self._run(["-t", "-g", "802-11-wireless.ssid", "connection", "show", "id", fields[0]])
-            result[fields[0]] = ssid if code2 == 0 else fields[0]
+            result[fields[0]] = split_terse(ssid)[0] if code2 == 0 and ssid else fields[0]   # -g output is escaped too
         return result
 
     # actions

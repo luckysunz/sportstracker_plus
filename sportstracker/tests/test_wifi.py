@@ -84,6 +84,12 @@ class NmcliTests(unittest.TestCase):
         self.runner.answers["nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device"] = (1, "")
         self.assertIsNone(self.nm.link())
 
+    def test_ssid_of_the_active_network(self):
+        self.runner.answers["nmcli -t -f ACTIVE,SSID device wifi list"] = (0, "no:Nachbar\nyes:Heim\\:WLAN\n")
+        self.assertEqual(self.nm.ssid("wlan0"), "Heim:WLAN")
+        self.runner.answers["nmcli -t -f ACTIVE,SSID device wifi list"] = (0, "no:Nachbar\n")
+        self.assertEqual(self.nm.ssid("wlan0"), "")
+
     def test_scan_keeps_the_strongest_entry_per_name_and_sorts(self):
         self.runner.answers["nmcli -t -f SSID,SIGNAL,SECURITY device wifi list"] = (
             0, "Heim:55:WPA2\nHeim:80:WPA2\n:30:WPA2\nNachbar:60:WPA1 WPA2\nOffen:40:\n--:20:WPA2\n")
@@ -100,6 +106,15 @@ class NmcliTests(unittest.TestCase):
         joined = [" ".join(call) for call in self.runner.calls]
         self.assertTrue(any("connection modify id Heim Profil wifi-sec.key-mgmt wpa-psk wifi-sec.psk neues-passwort" in c for c in joined))
         self.assertTrue(any(c.startswith("nmcli connection up id Heim Profil") for c in joined))
+        self.assertFalse(any("device wifi connect" in c for c in joined))
+
+    def test_profile_of_a_network_name_with_a_colon_is_found(self):
+        self.runner.answers["nmcli -t -f NAME,TYPE connection show"] = (0, "preconfigured:802-11-wireless\n")
+        self.runner.answers["nmcli -t -g 802-11-wireless.ssid connection show id preconfigured"] = (0, "HECHT\\:IOT")
+        ok, message = self.nm.connect("wlan0", "HECHT:IOT", "neues-passwort")
+        self.assertTrue(ok, message)
+        joined = [" ".join(call) for call in self.runner.calls]
+        self.assertTrue(any(c.startswith("nmcli connection up id preconfigured") for c in joined))
         self.assertFalse(any("device wifi connect" in c for c in joined))
 
     def test_connect_creates_a_profile_for_a_new_network(self):
@@ -135,6 +150,7 @@ class FakeNm:
         self.networks = [Network("Heim", 80, True), Network("Nachbar", 50, True)]
         self.connect_ok = True
         self.events = []
+        self.ssid_value = ""
         self.after_stop = None          # Link to report after the hotspot was stopped (known WLAN is back)
         self.runner = lambda argv, timeout: (0, "")
 
@@ -143,6 +159,9 @@ class FakeNm:
 
     def ip_address(self, device):
         return "192.168.22.22"
+
+    def ssid(self, device):
+        return self.ssid_value or self.link_value.connection
 
     def scan(self, device):
         self.events.append("scan")
@@ -200,6 +219,12 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual([n["ssid"] for n in status["networks"]], ["Heim", "Nachbar"])
         self.service.step()
         self.assertEqual(self.nm.events.count("scan"), 1)
+
+    def test_status_shows_the_network_name_not_the_profile_name(self):
+        self.nm.link_value = Link("wlan0", "connected", "preconfigured")
+        self.nm.ssid_value = "Heim"
+        self.service.step()
+        self.assertEqual(self.status()["connection"], "Heim")
 
     def test_hotspot_only_after_the_grace_period(self):
         self.go_offline()

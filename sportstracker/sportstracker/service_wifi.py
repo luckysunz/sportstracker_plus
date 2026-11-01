@@ -212,7 +212,8 @@ class WifiService:
                 self.offline_since = stamp
             elif cfg["enabled"] and stamp - self.offline_since >= cfg["grace_seconds"]:
                 self._start_hotspot(cfg, now)
-        status.update(mode=self.mode, device=self.device, connection=link.connection if link.connected else "",
+        network = (self.nm.ssid(self.device) or link.connection) if self.mode == "client" else ""
+        status.update(mode=self.mode, device=self.device, connection=network,
                       ip=self.nm.ip_address(self.device) if link.connected else "", networks=self.networks,
                       last_result=self.last_result)
         if self.mode == "hotspot" and self.hotspot_info is not None:
