@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Kamera – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Kamera</h1>
+{% include "camera_nav.html" %}
+<section>
+<h2>Foto aufnehmen</h2>
+{% if found %}
+<form method="post" action="{{ url_for('camera_photo') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="source" value="still">
+<label for="photo_size">Auflösung</label>
+<select id="photo_size" name="photo_size">
+{% for value, label in sizes %}<option value="{{ value }}" {% if value == size %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+<p><button type="submit">Foto aufnehmen und speichern</button></p>
+</form>
+<p class="hint">{{ status_text }}. Die Aufnahme dauert ein bis drei Sekunden. Das Foto wird mit Datum und Uhrzeit im Dateinamen in der Galerie gespeichert ({{ usage }} von {{ limit }} MB belegt).</p>
+{% else %}
+<div class="flash error">{{ status_text }}</div>
+<p class="hint">Hinweise: Das Flachbandkabel des IMX219 muss am Pi Zero 2 W mit dem schmalen 22-poligen Kabel angeschlossen sein (Kontakte zeigen zur Platine). Wird sie trotz richtigem Anschluss nicht erkannt, in <code>/boot/firmware/config.txt</code> unter <code>[all]</code> die Zeilen <code>camera_auto_detect=0</code> und <code>dtoverlay=imx219</code> eintragen und den Pi neu starten.</p>
+<p><a class="button" href="{{ url_for('camera_page') }}">Erneut prüfen</a></p>
+{% endif %}
+</section>
+{% if found %}{% include "camera_image_form.html" %}{% endif %}
+{% if latest %}
+<section>
+<h2>Letztes Foto</h2>
+<p><a href="{{ url_for('camera_view_page', name=latest.name) }}"><img class="snapshot" src="{{ url_for('camera_photo_file', name=latest.name) }}" alt="Letztes Foto {{ latest.name }}"></a></p>
+<p class="hint">{{ latest.taken.strftime('%d.%m.%Y %H:%M:%S') }}</p>
+</section>
+{% endif %}
+{% endblock %}

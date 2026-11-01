@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Übersicht – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Übersicht</h1>
+{% if safety_notice %}
+<div class="flash error">{{ safety_notice }}</div>
+{% endif %}
+{% if default_password %}
+<div class="flash warning">Es gilt noch das Standardkennwort (admin/admin). Das ist im Heimnetz oft in Ordnung; ändern kannst du es jederzeit unter <a href="{{ url_for('password') }}">Zugang</a>.</div>
+{% endif %}
+<section>
+<h2>Aktuelle Anzeige</h2>
+<p><img class="preview" src="{{ url_for('preview_png') }}" alt="Vorschau der LED-Matrix" width="384" height="384"></p>
+<p class="hint">Die Vorschau lädt beim Neuladen der Seite neu. Gerade zu sehen: {% if view.kind == 'game' %}Spiel{% elif view.kind == 'table' %}Tabelle{% elif view.kind == 'room' %}Raumansicht{% else %}Meldung{% endif %}{% if view.stale %}, Daten veraltet (roter Punkt oben rechts){% endif %}.</p>
+</section>
+<section>
+<h2>Anzeigeliste</h2>
+<p class="hint">{{ plan_reason }}{% if plan_rows|length > 1 %} – die Einträge laufen der Reihe nach durch.{% endif %}</p>
+<table class="kv">
+{% for row in plan_rows %}
+<tr><th>{% if row.current %}▶ jetzt{% endif %}{% if row.role %}{{ ' ' if row.current else '' }}{{ row.role }}{% endif %}</th><td>{{ row.text }}{% if plan_rows|length > 1 %} <span class="hint">({{ row.seconds }} s)</span>{% endif %}</td></tr>
+{% endfor %}
+</table>
+</section>
+{% if climate %}
+<section>
+<h2>Raumklima</h2>
+<table class="kv">
+{% if climate.fresh %}
+<tr><th>Temperatur</th><td>{{ climate.temperature }} °C</td></tr>
+<tr><th>Luftfeuchte</th><td>{{ climate.humidity }} %</td></tr>
+{% else %}
+<tr><th>Messwerte</th><td class="state-failed">keine aktuellen Werte</td></tr>
+{% endif %}
+<tr><th>Letzte Messung</th><td>{{ climate.updated }}</td></tr>
+{% if climate.error %}<tr><th>Meldung</th><td class="state-failed">{{ climate.error }}</td></tr>{% endif %}
+</table>
+</section>
+{% endif %}
+<section>
+<h2>Daten</h2>
+<table class="kv">
+<tr><th>Liga</th><td>{{ league_label }}</td></tr>
+<tr><th>Lieblingsteam</th><td>{{ favorite or '–' }}</td></tr>
+{% if game_text %}<tr><th>Spiel in der Anzeige</th><td>{{ game_text }}</td></tr>{% endif %}
+<tr><th>Letzte Aktualisierung</th><td>{{ updated }}</td></tr>
+<tr><th>Nächste Abfrage</th><td>{{ next_poll }}</td></tr>
+{% if state and state.error %}<tr><th>Fehler</th><td class="state-failed">{{ state.error }} (seit {{ error_since }})</td></tr>{% endif %}
+</table>
+</section>
+<section>
+<h2>Dienste</h2>
+<table class="kv">
+{% for name, status in services.items() %}
+<tr><th>{{ SERVICE_LABELS[name] }}</th><td class="state-{{ status }}">{{ status }}</td></tr>
+{% endfor %}
+</table>
+</section>
+{% endblock %}

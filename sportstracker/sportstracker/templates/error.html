@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Fehler – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Das hat nicht geklappt</h1>
+<section><p>{{ message }}</p><p><a href="{{ url_for('dashboard') }}">Zur Übersicht</a></p></section>
+{% endblock %}

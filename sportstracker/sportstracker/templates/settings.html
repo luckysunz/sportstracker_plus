@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Einstellungen</h1>
+
+<section>
+<h2>Liga</h2>
+<form method="get" action="{{ url_for('settings') }}" class="row">
+<select name="league" aria-label="Liga">
+{% for l in leagues %}<option value="{{ l.league_id }}" {% if l.league_id == league_id %}selected{% endif %}>{{ l.label }}</option>{% endfor %}
+{% if saved_league == 'custom' %}<option value="custom" {% if league_id == 'custom' %}selected{% endif %}>Benutzerdefiniert (Konfigurationsdatei)</option>{% endif %}
+</select>
+<button class="secondary" type="submit">Liga wählen und Teams laden</button>
+</form>
+{% if league_id != saved_league %}<p class="hint">Diese Liga ist noch nicht gespeichert. Bitte unten ein Lieblingsteam wählen und speichern.</p>{% endif %}
+</section>
+
+<form method="post" action="{{ url_for('settings_save') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="league" value="{{ league_id }}">
+
+<section>
+<h2>Anzeige</h2>
+<label for="favorite_team_id">Lieblingsteam</label>
+{% if teams %}
+<select id="favorite_team_id" name="favorite_team_id">
+<option value="" {% if not v.favorite_team_id %}selected{% endif %}>– bitte wählen –</option>
+{% for t in teams %}<option value="{{ t.team_id }}" {% if t.team_id == v.favorite_team_id %}selected{% endif %}>{{ t.name }}</option>{% endfor %}
+</select>
+{% else %}
+<input type="text" id="favorite_team_id" name="favorite_team_id" value="{{ v.favorite_team_id }}">
+<p class="hint">Team-ID der Quelle (Teamliste nicht verfügbar).</p>
+{% endif %}
+<label class="check"><input type="checkbox" name="show_team_names" {% if v.show_team_names %}checked{% endif %}> Teamkürzel unter den Logos anzeigen</label>
+<label class="check"><input type="checkbox" name="show_game_clock" {% if v.show_game_clock %}checked{% endif %}> Spielminuten bzw. Spieluhr anzeigen, wenn die Quelle sie liefert</label>
+<div class="grid">
+<div>
+<label for="table_label">Tabelle: Beschriftung</label>
+<select id="table_label" name="table_label">
+<option value="city" {% if v.table_label == 'city' %}selected{% endif %}>Städtename</option>
+<option value="short" {% if v.table_label == 'short' %}selected{% endif %}>Kürzel</option>
+</select>
+</div>
+<div>
+<label for="table_logo_size">Tabelle: Logogröße (Pixel, 0 = aus)</label>
+<input type="number" id="table_logo_size" name="table_logo_size" min="0" max="16" value="{{ v.table_logo_size }}">
+</div>
+</div>
+<label for="team_cities">Städtenamen (optional, eine Zeile je Team: Team-ID=Name)</label>
+<textarea id="team_cities" name="team_cities" spellcheck="false">{{ v.team_cities }}</textarea>
+<label for="team_labels">Kürzel (optional, eine Zeile je Team: Team-ID=ABC)</label>
+<textarea id="team_labels" name="team_labels" spellcheck="false">{{ v.team_labels }}</textarea>
+</section>
+
+<section>
+<h2>Spieltag-Anzeige</h2>
+<label class="check"><input type="checkbox" name="gameday_results" {% if v.gameday_results %}checked{% endif %}> Alle Ergebnisse des Spieltags bis Mitternacht zeigen: beendete Spiele und die Tabelle wechseln sich ab, sobald kein Spiel mehr läuft</label>
+<label class="check"><input type="checkbox" name="show_other_games" {% if v.show_other_games %}checked{% endif %}> Auch Spiele anderer Teams der Liga zeigen (laufendes Spiel mit bester Platzierung, Halbzeit- und Ergebniskarten)</label>
+<p class="hint">Spielt das Lieblingsteam, hat dessen Spiel immer Vorrang. Hauptspiel und Karten wechseln sich ab.</p>
+<div class="grid">
+{% for key, label, low, high in rotation_numbers[:4] %}
+<div>
+<label for="{{ key }}">{{ label }}</label>
+<input type="number" id="{{ key }}" name="{{ key }}" min="{{ low }}" max="{{ high }}" value="{{ v[key] }}">
+</div>
+{% endfor %}
+</div>
+</section>
+
+<section>
+<h2>Spielfreie Zeit</h2>
+<label for="idle_mode">Anzeige, wenn kein Spiel läuft</label>
+<select id="idle_mode" name="idle_mode">
+{% for mode, label in idle_modes.items() %}<option value="{{ mode }}" {% if mode == v.idle_mode %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+<label class="check"><input type="checkbox" name="idle_hide_table" {% if v.idle_hide_table %}checked{% endif %}> Livingmodus ohne Tabelle (spielfreie Zeit ohne Tabelle: Raumansicht, Bild und Nachricht)</label>
+<p class="hint">Ist der Haken gesetzt, wird die Tabelle außerhalb von Spieltagen nicht gezeigt; „Nur Tabelle“ zeigt dann die Raumansicht. Hat das Lieblingsteam später noch ein Spiel, kommt die Ankündigung mit in den Wechsel. Der Endstand des Lieblingsteams bleibt bis Mitternacht stehen.</p>
+<div class="grid">
+{% for key, label, low, high in rotation_numbers[4:] %}
+<div>
+<label for="{{ key }}">{{ label }}</label>
+<input type="number" id="{{ key }}" name="{{ key }}" min="{{ low }}" max="{{ high }}" value="{{ v[key] }}">
+</div>
+{% endfor %}
+</div>
+</section>
+
+<section>
+<h2>Temperatursensor (DHT22)</h2>
+<label class="check"><input type="checkbox" name="sensor_enabled" {% if v.sensor_enabled %}checked{% endif %}> Sensor verwenden (Raumansicht zeigt Temperatur und Luftfeuchte)</label>
+<div class="grid">
+<div>
+<label for="sensor_gpio">Datenleitung an GPIO</label>
+<select id="sensor_gpio" name="sensor_gpio">
+{% for g in sensor_gpios %}<option value="{{ g }}" {% if g|string == v.sensor_gpio %}selected{% endif %}>GPIO{{ g }}</option>{% endfor %}
+</select>
+</div>
+<div>
+<label for="sensor_interval_seconds">Messabstand (Sekunden)</label>
+<input type="number" id="sensor_interval_seconds" name="sensor_interval_seconds" min="5" max="3600" value="{{ v.sensor_interval_seconds }}">
+</div>
+<div>
+<label for="sensor_temp_offset">Temperatur-Korrektur (°C)</label>
+<input type="text" inputmode="decimal" id="sensor_temp_offset" name="sensor_temp_offset" value="{{ v.sensor_temp_offset }}">
+</div>
+<div>
+<label for="sensor_humidity_offset">Feuchte-Korrektur (%)</label>
+<input type="text" inputmode="decimal" id="sensor_humidity_offset" name="sensor_humidity_offset" value="{{ v.sensor_humidity_offset }}">
+</div>
+</div>
+<p class="hint">Der Sensor wird 3,3 V versorgt. Sitzt er hinter dem Panel, misst er zu warm: Mit der Korrektur (z. B. -2,5) gleichst du das aus.</p>
+</section>
+
+<section>
+<h2>Sicherheit (Temperaturschutz)</h2>
+<label class="check"><input type="checkbox" name="safety_enabled" {% if v.safety_enabled %}checked{% endif %}> Raspberry Pi bei Überhitzung automatisch herunterfahren</label>
+<label for="safety_shutdown_temp_c">Abschalttemperatur der CPU (°C)</label>
+<input type="number" id="safety_shutdown_temp_c" name="safety_shutdown_temp_c" min="{{ safety_min }}" max="{{ safety_max }}" step="1" value="{{ v.safety_shutdown_temp_c }}">
+<p class="hint">Der Sicherheitsdienst prüft alle 5 Sekunden die CPU-Temperatur. Liegt sie dreimal hintereinander auf oder über diesem Wert, fährt der Pi sauber herunter. Der Pi drosselt selbst ab ca. 80 °C und hat bei 85 °C seine harte Grenze – die Abschaltung sollte darunter liegen (Vorgabe: 84 °C). Nach einer Abschaltung bleibt der Pi aus, bis die Stromversorgung kurz getrennt wird.</p>
+</section>
+
+<section>
+<h2>Kamera</h2>
+<label class="check"><input type="checkbox" name="camera_enabled" {% if v.camera_enabled %}checked{% endif %}> Kamera im Backend anbieten (Menüpunkt „Kamera“)</label>
+<p class="hint">Auflösung, Live-Ansicht und Galerie stellst du auf der Seite „Kamera“ ein. Die Kamera liefert nur nach der Anmeldung Bilder.</p>
+</section>
+
+<section>
+<h2>Datenabfrage</h2>
+<div class="grid">
+<div>
+<label for="poll_game_seconds">An Spieltagen alle … Sekunden</label>
+<input type="number" id="poll_game_seconds" name="poll_game_seconds" min="15" max="3600" value="{{ v.poll_game_seconds }}">
+</div>
+<div>
+<label for="poll_idle_seconds">Sonst alle … Sekunden</label>
+<input type="number" id="poll_idle_seconds" name="poll_idle_seconds" min="60" max="86400" value="{{ v.poll_idle_seconds }}">
+</div>
+</div>
+</section>
+
+<section>
+<h2>Zeitzone</h2>
+<label for="timezone">Zeitzone</label>
+<input type="text" id="timezone" name="timezone" value="{{ v.timezone }}" list="zones" autocomplete="off">
+<datalist id="zones">{% for z in zones %}<option value="{{ z }}">{% endfor %}</datalist>
+<p class="hint">Gilt für die Anzeige (Spieltag, Mitternachtswechsel) und wird auch als Systemzeitzone gesetzt.</p>
+</section>
+
+<section>
+<h2>LED-Matrix</h2>
+<p class="hint">Änderungen hier starten die Anzeige kurz neu.</p>
+<div class="grid">
+{% for key, label, low, high in matrix_numbers %}
+<div>
+<label for="matrix_{{ key }}">{{ label }}</label>
+<input type="number" id="matrix_{{ key }}" name="matrix_{{ key }}" min="{{ low }}" max="{{ high }}" value="{{ v['matrix_' + key] }}">
+</div>
+{% endfor %}
+<div>
+<label for="hardware_mapping">Hardware-Mapping</label>
+<select id="hardware_mapping" name="hardware_mapping">
+{% for m in mappings %}<option value="{{ m }}" {% if m == v.hardware_mapping %}selected{% endif %}>{{ m }}</option>{% endfor %}
+</select>
+</div>
+</div>
+</section>
+
+<p><button type="submit">Speichern</button></p>
+</form>
+{% endblock %}

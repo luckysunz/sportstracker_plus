@@ -1,0 +1,90 @@
+{
+  "timezone": "Europe/Berlin",
+  "provider": "openligadb",
+  "provider_params": {
+    "league_shortcut": "del",
+    "season": 2026,
+    "league_id": 4947
+  },
+  "favorite_team_id": "641",
+  "show_team_names": true,
+  "show_game_clock": true,
+  "table_logo_size": 6,
+  "matrix": {
+    "rows": 64,
+    "cols": 64,
+    "chain_length": 1,
+    "parallel": 1,
+    "hardware_mapping": "adafruit-hat",
+    "gpio_slowdown": 1,
+    "brightness": 60,
+    "pwm_bits": 11
+  },
+  "table_label": "city",
+  "show_other_games": true,
+  "idle_mode": "alternate",
+  "sensor": {
+    "enabled": false,
+    "type": "dht22",
+    "gpio": 25,
+    "interval_seconds": 30,
+    "temp_offset": 0.0,
+    "humidity_offset": 0.0
+  },
+  "camera": {
+    "enabled": true,
+    "width": 1280,
+    "height": 960,
+    "live_width": 640,
+    "live_height": 480,
+    "live_fps": 10,
+    "gallery_limit_mb": 200,
+    "hflip": true,
+    "vflip": true,
+    "brightness": 0,
+    "sharpness": 1.0,
+    "motion_enabled": false,
+    "motion_sensitivity": 3,
+    "motion_pause": 60
+  },
+  "message": {
+    "enabled": false,
+    "text": "Hallo!",
+    "color": "#FFB000",
+    "font": "6x13B",
+    "intensity": 100,
+    "animation": "none",
+    "speed": "normal",
+    "permanent": false,
+    "during_games": false,
+    "seconds": 10
+  },
+  "safety": {
+    "enabled": true,
+    "shutdown_temp_c": 84
+  },
+  "picture": {
+    "enabled": false,
+    "fit": "fill",
+    "intensity": 100,
+    "permanent": false,
+    "seconds": 10,
+    "transition": "fade",
+    "transition_ms": 800
+  },
+  "satellites": {
+    "enabled": false,
+    "seconds": 8,
+    "mqtt": {
+      "enabled": false,
+      "host": "",
+      "port": 1883,
+      "username": "",
+      "password": "",
+      "base_topic": "sportstracker"
+    },
+    "items": []
+  },
+  "idle_hide_table": false,
+  "gameday_results": true
+}

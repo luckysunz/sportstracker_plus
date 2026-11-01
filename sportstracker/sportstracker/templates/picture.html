@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Bild – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Bild</h1>
+
+<section>
+<h2>Vorschau</h2>
+{% if count %}
+<p><img src="{{ url_for('picture_preview', **preview_args) }}" alt="Vorschau der Bilder" width="256" height="256" style="image-rendering:pixelated; background:#0c0c0c; border:1px solid var(--line); border-radius:6px;"></p>
+<p class="hint">{% if count > 1 %}Zeitraffer der Galerie: jedes Bild ist hier auf wenige Sekunden verkürzt, die Übergänge laufen wie auf der Matrix. Eine ganze Runde dauert {{ total_seconds }} Sekunden. {% elif loop_seconds %}Animiertes Bild, eine Runde dauert {{ loop_seconds|round(1)|string|replace('.', ',') }} Sekunden (die Vorschau zeigt die ersten 6). {% endif %}Die Vorschau zeigt die gespeicherten Einstellungen bzw. nach „Vorschau aktualisieren“ die eingegebenen Werte (ohne zu speichern).</p>
+{% else %}
+<p class="hint">Noch kein Bild hochgeladen.</p>
+{% endif %}
+</section>
+
+<section>
+<h2>Bilder hochladen</h2>
+<form method="post" action="{{ url_for('picture_upload') }}" enctype="multipart/form-data">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label for="image">Dateien (JPEG, PNG, GIF oder WebP)</label>
+<input id="image" type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" multiple required>
+<p class="hint">Die Galerie fasst bis zu {{ max_images }} Bilder ({{ count }} vorhanden), jedes bis {{ max_mb }} MB; mehrere Dateien lassen sich zusammen auswählen (zusammen höchstens 50 MB je Upload). Animierte GIFs laufen als Animation (höchstens 300 Bilder). Die Bilder werden auf dem Pi stark verkleinert gespeichert; die Matrix hat nur {{ cfg.matrix.cols * cfg.matrix.chain_length }} x {{ cfg.matrix.rows * cfg.matrix.parallel }} Punkte, einfache Motive mit kräftigen Farben wirken am besten.</p>
+<p><button type="submit">Hochladen</button></p>
+</form>
+</section>
+
+<form method="post" action="{{ url_for('picture_save') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+{% if items %}
+<section>
+<h2>Galerie ({{ count }} von {{ max_images }})</h2>
+<p class="hint">Die Bilder laufen in dieser Reihenfolge. Anzeigedauer leer lassen = Standarddauer ({{ p.seconds }} Sekunden, siehe unten).</p>
+{% for item in items %}
+<div class="row" style="margin:.5em 0; padding:.4em 0; border-top:1px solid var(--line);">
+<strong>{{ loop.index }}</strong>
+<img src="{{ url_for('picture_item_file', image_id=item.id) }}" alt="Bild {{ loop.index }}" width="64" height="64" style="object-fit:contain; background:#000; border:1px solid var(--line); border-radius:4px;">
+<span class="hint" style="min-width:8em;">{{ item.name or 'Bild' }}</span>
+<label for="seconds_{{ item.id }}" style="margin:0; font-weight:400;">Dauer (s)</label>
+<input id="seconds_{{ item.id }}" type="number" name="seconds_{{ item.id }}" min="3" max="120" step="1" placeholder="{{ p.seconds }}" value="{% if item.id in typed %}{{ typed[item.id] }}{% elif item.seconds %}{{ item.seconds }}{% endif %}" style="width:5.5em;">
+<button class="secondary" type="submit" formaction="{{ url_for('picture_item_move', image_id=item.id) }}" name="direction" value="up" {% if loop.first %}disabled{% endif %} title="nach oben">↑</button>
+<button class="secondary" type="submit" formaction="{{ url_for('picture_item_move', image_id=item.id) }}" name="direction" value="down" {% if loop.last %}disabled{% endif %} title="nach unten">↓</button>
+<button class="danger" type="submit" formaction="{{ url_for('picture_item_delete', image_id=item.id) }}" title="Bild entfernen">Entfernen</button>
+</div>
+{% endfor %}
+</section>
+{% endif %}
+
+<section>
+<h2>Darstellung</h2>
+<div class="grid">
+<div>
+<label for="fit">Anpassung</label>
+<select id="fit" name="fit">
+{% for key, label in fits.items() %}<option value="{{ key }}" {% if key == p.fit %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+</div>
+<div>
+<label for="intensity">Helligkeit (%)</label>
+<input id="intensity" type="number" name="intensity" min="5" max="100" step="1" value="{{ p.intensity }}">
+</div>
+</div>
+</section>
+
+<section>
+<h2>Übergang</h2>
+<div class="grid">
+<div>
+<label for="transition">Effekt zwischen zwei Bildern</label>
+<select id="transition" name="transition">
+{% for key, label in transitions.items() %}<option value="{{ key }}" {% if key == p.transition %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+</div>
+<div>
+<label for="transition_ms">Dauer des Übergangs</label>
+<select id="transition_ms" name="transition_ms">
+{% for ms in transition_options %}<option value="{{ ms }}" {% if ms|string == p.transition_ms|string %}selected{% endif %}>{{ ms }} ms</option>{% endfor %}
+</select>
+</div>
+</div>
+<p class="hint">Der Übergang läuft am Anfang der Anzeigedauer des nächsten Bildes. „Zufällig“ wählt Überblenden, Schieben oder Wischen und wechselt von Runde zu Runde. Bei einem einzelnen Bild gibt es keinen Übergang.</p>
+</section>
+
+<section>
+<h2>Anzeige</h2>
+<label class="check"><input type="checkbox" name="enabled" {% if p.enabled %}checked{% endif %}> Bilder aktiv</label>
+<label class="check"><input type="checkbox" name="permanent" {% if p.permanent %}checked{% endif %}> Permanent anzeigen (ausschließlich die Bilder, auch bei laufenden Spielen)</label>
+<label for="seconds">Standard-Anzeigedauer je Bild (Sekunden)</label>
+<input id="seconds" type="number" name="seconds" min="3" max="120" step="1" value="{{ p.seconds }}">
+<p class="hint">Ohne „Permanent“ läuft in der Anzeigeliste mit Tabelle, Raumansicht, Spielankündigung und Nachricht (nicht, solange ein Spiel läuft) jeweils eine ganze Runde durch alle Bilder. Mit „Permanent“ wiederholt sich die Runde endlos, auch vom letzten zurück zum ersten Bild. Eine permanente Nachricht hat Vorrang vor permanenten Bildern.</p>
+</section>
+
+<p>
+<button type="submit" name="action" value="save">Speichern</button>
+<button type="submit" name="action" value="preview" class="secondary">Vorschau aktualisieren</button>
+</p>
+</form>
+
+{% if items %}
+<section>
+<h2>Alle Bilder entfernen</h2>
+<form method="post" action="{{ url_for('picture_delete') }}" class="row">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label class="check"><input type="checkbox" name="confirm" value="yes" required> Ja, alle Bilder entfernen</label>
+<button class="danger" type="submit">Entfernen</button>
+</form>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}System – Sportstracker+{% endblock %}
+{% block content %}
+<h1>System</h1>
+<section>
+<h2>Raspberry Pi</h2>
+<table class="kv">
+{% if info.model %}<tr><th>Modell</th><td>{{ info.model }}</td></tr>{% endif %}
+{% if info.os %}<tr><th>Betriebssystem</th><td>{{ info.os }}</td></tr>{% endif %}
+<tr><th>Hostname</th><td>{{ info.hostname }}</td></tr>
+{% if info.addresses %}<tr><th>Adressen</th><td>{{ info.addresses|join(', ') }}</td></tr>{% endif %}
+{% if info.uptime %}<tr><th>Laufzeit</th><td>{{ info.uptime }}</td></tr>{% endif %}
+{% if info.load %}<tr><th>Last (1/5/15 Min.)</th><td>{{ info.load }}</td></tr>{% endif %}
+{% if info.cpu_temp %}<tr><th>CPU-Temperatur</th><td>{{ info.cpu_temp }}</td></tr>{% endif %}
+{% if info.memory %}<tr><th>Arbeitsspeicher</th><td>{{ info.memory }}</td></tr>{% endif %}
+{% if info.disk %}<tr><th>Speicherkarte</th><td>{{ info.disk }}</td></tr>{% endif %}
+{% if info.system_timezone %}<tr><th>Systemzeitzone</th><td>{{ info.system_timezone }}</td></tr>{% endif %}
+</table>
+</section>
+<section>
+<h2>Temperaturschutz</h2>
+<table class="kv">
+<tr><th>Status</th><td>{% if protection.enabled %}aktiv – Abschaltung ab {{ protection.limit }} °C{% else %}ausgeschaltet{% endif %}</td></tr>
+{% if info.cpu_temp %}<tr><th>CPU jetzt</th><td>{{ info.cpu_temp }}</td></tr>{% endif %}
+{% if protection.last %}<tr><th>Letzte Abschaltung</th><td>{{ protection.last.when }} bei {{ protection.last.temperature }} °C (Grenze {{ protection.last.limit }} °C)</td></tr>{% endif %}
+</table>
+<p class="hint">Die Abschaltgrenze stellst du unter <a href="{{ url_for('settings') }}">Einstellungen</a> ein.{% if not protection.enabled %} Ohne Schutz drosselt der Pi bei ca. 80 °C und begrenzt hart bei 85 °C.{% endif %}</p>
+</section>
+<section>
+<h2>Dienste</h2>
+{% for name in services_order %}
+<div class="row" style="margin:.4em 0">
+<span style="min-width:9em">{{ SERVICE_LABELS[name] }}</span>
+<span class="state-{{ services[name] }}" style="min-width:5em">{{ services[name] }}</span>
+<form method="post" action="{{ url_for('system_restart', name=name) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<button class="secondary" type="submit">Neu starten</button>
+</form>
+<a href="{{ url_for('logs', name=name) }}">Protokoll</a>
+</div>
+{% endfor %}
+</section>
+<section>
+<h2>Hostname</h2>
+<form method="post" action="{{ url_for('system_hostname') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label for="hostname">Neuer Hostname</label>
+<input type="text" id="hostname" name="hostname" value="{{ info.hostname }}" pattern="[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?">
+<p class="hint">Kleinbuchstaben, Ziffern und Bindestrich. Die Zeitzone stellst du unter Einstellungen ein.</p>
+<p><button class="secondary" type="submit">Hostname setzen</button></p>
+</form>
+</section>
+<section>
+<h2>Neustart und Ausschalten</h2>
+<form method="post" action="{{ url_for('system_reboot') }}" class="row">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label class="check"><input type="checkbox" name="confirm" value="yes" required> Ja, neu starten</label>
+<button class="danger" type="submit">Raspberry Pi neu starten</button>
+</form>
+<form method="post" action="{{ url_for('system_shutdown') }}" class="row" style="margin-top:12px">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label class="check"><input type="checkbox" name="confirm" value="yes" required> Ja, herunterfahren</label>
+<button class="danger" type="submit">Herunterfahren</button>
+</form>
+<p class="hint">Nach dem Herunterfahren muss die Stromversorgung kurz getrennt werden, um den Pi wieder zu starten.</p>
+</section>
+{% endblock %}

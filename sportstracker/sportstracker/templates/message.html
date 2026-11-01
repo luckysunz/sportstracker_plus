@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Nachricht – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Nachricht</h1>
+<form method="post" action="{{ url_for('message_save') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+<section>
+<h2>Vorschau</h2>
+<p><img src="{{ url_for('message_preview', **preview_args) }}" alt="Vorschau der Nachricht" width="256" height="256" style="image-rendering:pixelated; background:#0c0c0c; border:1px solid var(--line); border-radius:6px;"></p>
+<p class="hint">Die Vorschau zeigt die gespeicherte Nachricht bzw. nach „Vorschau aktualisieren“ die eingegebenen Werte (ohne zu speichern). Passt der Text nicht auf die Matrix, wird automatisch eine kleinere Schrift verwendet.</p>
+</section>
+
+<section>
+<h2>Text und Aussehen</h2>
+<label for="text">Text</label>
+<textarea id="text" name="text" maxlength="{{ max_text }}" rows="3" style="font-family:inherit; font-size:1rem;">{{ m.text }}</textarea>
+<p class="hint">Bis {{ max_text }} Zeichen. Zeilenumbrüche werden übernommen (beim Lauftext zu einer Zeile verbunden). Umlaute und ß gehen.</p>
+<div class="grid">
+<div>
+<label for="color">Farbe</label>
+<input id="color" type="color" name="color" value="{{ m.color }}" style="width:70px; height:38px; padding:2px;">
+<p class="hint">Beim Regenbogen wird die Farbe nicht verwendet.</p>
+</div>
+<div>
+<label for="intensity">Intensität (%)</label>
+<input id="intensity" type="number" name="intensity" min="5" max="100" step="1" value="{{ m.intensity }}">
+</div>
+<div>
+<label for="font">Schrift</label>
+<select id="font" name="font">
+{% for f in fonts %}<option value="{{ f.key }}" {% if f.key == m.font %}selected{% endif %}>{{ f.label }}</option>{% endfor %}
+</select>
+</div>
+<div>
+<label for="animation">Animation</label>
+<select id="animation" name="animation">
+{% for key, label in animations %}<option value="{{ key }}" {% if key == m.animation %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+</div>
+<div>
+<label for="speed">Tempo</label>
+<select id="speed" name="speed">
+{% for key, label in speeds %}<option value="{{ key }}" {% if key == m.speed %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Anzeige</h2>
+<label class="check"><input type="checkbox" name="enabled" {% if m.enabled %}checked{% endif %}> Nachricht aktiv</label>
+<label class="check"><input type="checkbox" name="permanent" {% if m.permanent %}checked{% endif %}> Permanent anzeigen (ausschließlich die Nachricht, auch bei laufenden Spielen)</label>
+<label class="check"><input type="checkbox" name="during_games" {% if m.during_games %}checked{% endif %}> Im Wechsel auch zwischen laufenden Spielen und Ergebniskarten zeigen</label>
+<label for="seconds">Anzeigedauer im Wechsel (Sekunden)</label>
+<input id="seconds" type="number" name="seconds" min="3" max="120" step="1" value="{{ m.seconds }}">
+<p class="hint">Ohne „Permanent“ läuft die Nachricht in der Anzeigeliste mit: Tabelle, Raumansicht und Spielankündigung, bei Wunsch auch zwischen den Spielen. Ein Lauftext bekommt mindestens die Zeit für einen vollständigen Durchlauf.</p>
+</section>
+
+<p>
+<button type="submit" name="action" value="save">Speichern</button>
+<button type="submit" name="action" value="preview" class="secondary">Vorschau aktualisieren</button>
+</p>
+</form>
+{% endblock %}

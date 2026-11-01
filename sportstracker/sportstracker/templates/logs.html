@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Protokoll – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Protokoll: {{ SERVICE_LABELS[name] }}</h1>
+<p><a href="{{ url_for('system_page') }}">Zurück zu System</a></p>
+<pre class="log">{{ text }}</pre>
+{% endblock %}

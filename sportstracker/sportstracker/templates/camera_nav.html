@@ -1,0 +1,5 @@
+<p class="row subnav">
+<a href="{{ url_for('camera_page') }}" {% if section == 'photo' %}class="current"{% endif %}>Foto</a>
+<a href="{{ url_for('camera_live_page') }}" {% if section == 'live' %}class="current"{% endif %}>Live-Ansicht</a>
+<a href="{{ url_for('camera_gallery_page') }}" {% if section == 'gallery' %}class="current"{% endif %}>Galerie ({{ photo_count }})</a>
+</p>

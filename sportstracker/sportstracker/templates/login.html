@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Anmelden – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Anmelden</h1>
+<section>
+<form method="post" action="{{ url_for('login') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label for="username">Benutzername</label>
+<input type="text" id="username" name="username" autocomplete="username" autofocus>
+<label for="password">Kennwort</label>
+<input type="password" id="password" name="password" autocomplete="current-password">
+<p><button type="submit">Anmelden</button></p>
+</form>
+</section>
+{% endblock %}

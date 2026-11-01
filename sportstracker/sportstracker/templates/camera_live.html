@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Live-Ansicht – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Kamera</h1>
+{% include "camera_nav.html" %}
+<section>
+<h2>Live-Ansicht</h2>
+<form method="post" action="{{ url_for('camera_live_settings') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% if running %}<input type="hidden" name="run" value="1">{% endif %}
+<div class="grid">
+<div>
+<label for="live_size">Auflösung</label>
+<select id="live_size" name="live_size">
+{% for value, label in sizes %}<option value="{{ value }}" {% if value == size %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+</div>
+<div>
+<label for="live_fps">Bilder pro Sekunde</label>
+<select id="live_fps" name="live_fps">
+{% for f in fps_options %}<option value="{{ f }}" {% if f == fps %}selected{% endif %}>{{ f }}</option>{% endfor %}
+</select>
+</div>
+</div>
+<p><button class="secondary" type="submit">Einstellungen übernehmen</button></p>
+</form>
+{% if running %}
+<p><img class="snapshot" src="{{ url_for('camera_live_stream') }}" alt="Live-Ansicht nicht verfügbar. Die Meldung steht unter dem Link „Fehlermeldung“."></p>
+<div class="row">
+<a class="button" href="{{ url_for('camera_live_page') }}">Live-Ansicht beenden</a>
+<form method="post" action="{{ url_for('camera_photo') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="source" value="live">
+<button type="submit">Aktuelles Bild in der Galerie speichern</button>
+</form>
+<a href="{{ url_for('camera_live_stream') }}">Fehlermeldung</a>
+{% if motion_enabled %}<a href="{{ url_for('camera_motion_status') }}" target="_blank" rel="noopener">Bewegungsstatus</a>{% endif %}
+</div>
+<p class="hint">Der Strom läuft, solange diese Seite offen ist, und endet spätestens nach 30 Minuten. Das gespeicherte Bild hat die Live-Auflösung.</p>
+{% else %}
+<p><a class="button" href="{{ url_for('camera_live_page', run=1) }}">Live-Ansicht starten</a></p>
+<p class="hint">Die Live-Ansicht belastet den kleinen Pi (Anzeige und Kamera teilen sich die CPU). Bei flimmernder Matrix eine kleinere Auflösung oder weniger Bilder pro Sekunde wählen.</p>
+{% endif %}
+</section>
+<section>
+<h2>Bewegungsmelder</h2>
+<form method="post" action="{{ url_for('camera_motion_settings') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% if running %}<input type="hidden" name="run" value="1">{% endif %}
+<label class="check"><input type="checkbox" name="motion_enabled" {% if motion_enabled %}checked{% endif %}> Bewegungsmelder einschalten</label>
+<div class="grid">
+<div>
+<label for="motion_sensitivity">Empfindlichkeit</label>
+<select id="motion_sensitivity" name="motion_sensitivity">
+{% for value, label in motion_levels %}<option value="{{ value }}" {% if value == motion_level %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+</div>
+<div>
+<label for="motion_pause">Pause zwischen zwei Fotos</label>
+<select id="motion_pause" name="motion_pause">
+{% for value, label in motion_pauses %}<option value="{{ value }}" {% if value == motion_pause %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+</div>
+</div>
+<p><button class="secondary" type="submit">Bewegungsmelder übernehmen</button></p>
+</form>
+<p class="hint">Bei erkannter Bewegung wird das aktuelle Live-Bild (mit Live-Auflösung) automatisch in der Galerie gespeichert. Der Bewegungsmelder arbeitet nur, solange die Live-Ansicht läuft, also höchstens 30 Minuten, und belastet die CPU zusätzlich ein wenig. Die Speichergrenze der Galerie gilt auch für diese Fotos.</p>
+</section>
+{% include "camera_image_form.html" %}
+{% endblock %}

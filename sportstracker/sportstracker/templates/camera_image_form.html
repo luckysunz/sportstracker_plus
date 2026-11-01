@@ -1,0 +1,26 @@
+<section>
+<h2>Bild</h2>
+<form method="post" action="{{ url_for('camera_image_settings') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<input type="hidden" name="back" value="{{ image_back }}">
+{% if image_run %}<input type="hidden" name="run" value="1">{% endif %}
+<label class="check"><input type="checkbox" name="hflip" {% if hflip %}checked{% endif %}> Horizontal spiegeln</label>
+<label class="check"><input type="checkbox" name="vflip" {% if vflip %}checked{% endif %}> Vertikal spiegeln</label>
+<p class="hint">Beide Schalter an drehen das Bild um 180° (Kamera steht auf dem Kopf). Das gilt für Fotos und die Live-Ansicht.</p>
+<div class="grid">
+<div>
+<label for="brightness">Helligkeit</label>
+<select id="brightness" name="brightness">
+{% for value, label in brightness_options %}<option value="{{ value }}" {% if value == brightness %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+</div>
+<div>
+<label for="sharpness">Schärfe</label>
+<select id="sharpness" name="sharpness">
+{% for value, label in sharpness_options %}<option value="{{ value }}" {% if value == sharpness %}selected{% endif %}>{{ label }}</option>{% endfor %}
+</select>
+</div>
+</div>
+<p><button class="secondary" type="submit">Bild-Einstellungen übernehmen</button></p>
+</form>
+</section>

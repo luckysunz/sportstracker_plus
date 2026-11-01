@@ -1,0 +1,72 @@
+[
+ {
+  "teamInfoId": 641,
+  "teamName": "Eisbären Berlin",
+  "shortName": "EBB",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_3.svg",
+  "points": 28,
+  "opponentGoals": 18,
+  "goals": 43,
+  "matches": 12,
+  "won": 9,
+  "lost": 2,
+  "draw": 1,
+  "goalDiff": 25
+ },
+ {
+  "teamInfoId": 5450,
+  "teamName": "Nürnberg Ice Tigers",
+  "shortName": "NIT",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_14.svg",
+  "points": 25,
+  "opponentGoals": 30,
+  "goals": 47,
+  "matches": 13,
+  "won": 8,
+  "lost": 4,
+  "draw": 1,
+  "goalDiff": 17
+ },
+ {
+  "teamInfoId": 338,
+  "teamName": "Adler Mannheim",
+  "shortName": "MAN",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_2.svg",
+  "points": 23,
+  "opponentGoals": 27,
+  "goals": 40,
+  "matches": 12,
+  "won": 7,
+  "lost": 3,
+  "draw": 2,
+  "goalDiff": 13
+ },
+ {
+  "teamInfoId": 2773,
+  "teamName": "Red Bull München",
+  "shortName": "RBM",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_12.svg",
+  "points": 23,
+  "opponentGoals": 36,
+  "goals": 37,
+  "matches": 12,
+  "won": 7,
+  "lost": 3,
+  "draw": 2,
+  "goalDiff": 1
+ },
+ {
+  "teamInfoId": 351,
+  "teamName": "Straubing Tigers",
+  "shortName": "STR",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_6.svg",
+  "points": 22,
+  "opponentGoals": 34,
+  "goals": 45,
+  "matches": 12,
+  "won": 7,
+  "lost": 4,
+  "draw": 1,
+  "goalDiff": 11
+ }
+]

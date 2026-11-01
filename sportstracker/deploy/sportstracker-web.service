@@ -1,0 +1,16 @@
+[Unit]
+Description=Sportstracker web backend
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+WorkingDirectory=@DIR@
+Environment=PYTHONUNBUFFERED=1
+ExecStart=@VENV@/bin/python -m sportstracker.service_web --config @DIR@/config/config.json --port 8080
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,2 @@
+# Allows the Sportstracker web backend (user @USER@) to run exactly these commands as root.
+@USER@ ALL=(root) NOPASSWD: /usr/bin/systemctl reboot, /usr/bin/systemctl poweroff, /usr/bin/systemctl restart sportstracker-data, /usr/bin/systemctl restart sportstracker-display, /usr/bin/systemctl restart sportstracker-sensor, /usr/bin/systemctl restart sportstracker-web, /usr/bin/systemctl restart sportstracker-safety, /usr/bin/systemctl restart sportstracker-mqtt, /usr/bin/timedatectl set-timezone *, /usr/bin/hostnamectl set-hostname *

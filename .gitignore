@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+
+# Lokale/geheime Konfiguration (auf dem Pi vorhanden, nicht ins Repo)
+sportstracker/config/config.json
+sportstracker/config/*.local.json
+.env
+
+# Zu gross fuer GitHub (>100 MB) bzw. nicht Teil des Projekts
+gehaeuse/porta_occhiali_macchina_PETG-30mm_height_optimal.stl
+_archiv/
+Claude outputs/
+*.tar.gz
+*.eml
+
+# Betriebssystem / Editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/

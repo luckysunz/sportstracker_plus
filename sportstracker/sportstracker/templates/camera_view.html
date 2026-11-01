@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Foto – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Kamera</h1>
+{% include "camera_nav.html" %}
+<section>
+<h2>Foto vom {{ taken }}</h2>
+<p><img class="snapshot" src="{{ url_for('camera_photo_file', name=name) }}" alt="Foto {{ taken }}"></p>
+<p class="row">
+{% if newer %}<a href="{{ url_for('camera_view_page', name=newer) }}">← neueres</a>{% endif %}
+<a href="{{ url_for('camera_gallery_page') }}">Galerie</a>
+{% if older %}<a href="{{ url_for('camera_view_page', name=older) }}">älteres →</a>{% endif %}
+<a class="button" href="{{ url_for('camera_photo_file', name=name, dl=1) }}">Herunterladen ({{ size }} MB)</a>
+</p>
+<form method="post" action="{{ url_for('camera_photo_delete', name=name) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label class="check"><input type="checkbox" name="confirm" value="yes"> Ja, dieses Foto löschen</label>
+<p><button class="danger" type="submit">Löschen</button></p>
+</form>
+</section>
+{% endblock %}

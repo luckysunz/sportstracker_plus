@@ -1,0 +1,16 @@
+[Unit]
+Description=Sportstracker data service (polls the league source)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+WorkingDirectory=@DIR@
+Environment=PYTHONUNBUFFERED=1
+ExecStart=@VENV@/bin/python -m sportstracker.service_data --config @DIR@/config/config.json
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

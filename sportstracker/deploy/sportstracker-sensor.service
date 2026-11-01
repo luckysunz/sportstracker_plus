@@ -1,0 +1,15 @@
+[Unit]
+Description=Sportstracker sensor service (DHT22 room climate)
+After=multi-user.target
+
+[Service]
+Type=simple
+User=@USER@
+WorkingDirectory=@DIR@
+Environment=PYTHONUNBUFFERED=1
+ExecStart=@VENV@/bin/python -m sportstracker.service_sensor --config @DIR@/config/config.json
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

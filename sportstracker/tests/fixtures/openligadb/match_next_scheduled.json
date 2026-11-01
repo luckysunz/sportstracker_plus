@@ -1,0 +1,35 @@
+{
+ "matchID": 84406,
+ "matchDateTime": "2026-10-30T19:30:00",
+ "timeZoneID": null,
+ "leagueId": 4947,
+ "leagueName": "DEL 2026/2027",
+ "leagueSeason": 2026,
+ "leagueShortcut": "del",
+ "matchDateTimeUTC": "2026-10-30T18:30:00Z",
+ "group": {
+  "groupName": "13. Spieltag",
+  "groupOrderID": 13,
+  "groupID": 50883
+ },
+ "team1": {
+  "teamId": 345,
+  "teamName": "ERC Ingolstadt",
+  "shortName": "ING",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/_processed_/5/c/csm_team_1_7a9cf9eecf.png",
+  "teamGroupName": null
+ },
+ "team2": {
+  "teamId": 641,
+  "teamName": "Eisbären Berlin",
+  "shortName": "EBB",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_3.svg",
+  "teamGroupName": null
+ },
+ "lastUpdateDateTime": "2026-07-06T22:52:29.753",
+ "matchIsFinished": false,
+ "matchResults": [],
+ "goals": [],
+ "location": null,
+ "numberOfViewers": null
+}

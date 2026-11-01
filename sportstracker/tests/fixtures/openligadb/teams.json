@@ -1,0 +1,100 @@
+[
+ {
+  "teamId": 338,
+  "teamName": "Adler Mannheim",
+  "shortName": "MAN",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_2.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 348,
+  "teamName": "Augsburger Panther",
+  "shortName": "AEV",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_13.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 641,
+  "teamName": "Eisbären Berlin",
+  "shortName": "EBB",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_3.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 345,
+  "teamName": "ERC Ingolstadt",
+  "shortName": "ING",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/_processed_/5/c/csm_team_1_7a9cf9eecf.png",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 5042,
+  "teamName": "Grizzlys Wolfsburg",
+  "shortName": "WOB",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_8.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 347,
+  "teamName": "Iserlohn Roosters",
+  "shortName": "IEC",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_7.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 344,
+  "teamName": "Kölner Haie",
+  "shortName": "KEC",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_11.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 6451,
+  "teamName": "Krefeld Pinguine",
+  "shortName": "KEV",
+  "teamIconUrl": "https://assets.holema.de/core/image/GE3TQXZSGBPV6ZTGGJSWENA",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 5283,
+  "teamName": "Löwen Frankfurt",
+  "shortName": "FRA",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_44.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 5450,
+  "teamName": "Nürnberg Ice Tigers",
+  "shortName": "NIT",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_14.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 5041,
+  "teamName": "Pinguins Bremerhaven",
+  "shortName": "BHV",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_9.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 2773,
+  "teamName": "Red Bull München",
+  "shortName": "RBM",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_12.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 2781,
+  "teamName": "Schwenninger Wild Wings",
+  "shortName": "SWW",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_15.svg",
+  "teamGroupName": null
+ },
+ {
+  "teamId": 351,
+  "teamName": "Straubing Tigers",
+  "shortName": "STR",
+  "teamIconUrl": "https://www.penny-del.org/fileadmin/images/teams/2023/team_6.svg",
+  "teamGroupName": null
+ }
+]

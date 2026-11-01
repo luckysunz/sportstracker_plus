@@ -1,0 +1,19 @@
+[Unit]
+Description=Sportstracker display service (drives the LED matrix)
+After=sportstracker-data.service
+
+[Service]
+Type=simple
+# The LED library needs root for the GPIO access.
+User=root
+WorkingDirectory=@DIR@
+Environment=PYTHONUNBUFFERED=1
+# Do not leave root-owned .pyc files in the project folder (they would block later file copies).
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=@VENV@/bin/python -m sportstracker.service_display --config @DIR@/config/config.json
+# Matrix settings only apply at start-up: the service exits when they change and systemd starts it again.
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

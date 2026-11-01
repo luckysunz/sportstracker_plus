@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Sportstracker+{% endblock %}</title>
+{% block head %}{% endblock %}
+<style>
+:root { --bg:#f4f5f7; --fg:#1d2330; --muted:#667085; --card:#fff; --line:#d9dde5; --accent:#1f5fbf; --ok:#17794a; --warn:#9a6700; --err:#b42318; }
+@media (prefers-color-scheme: dark) { :root { --bg:#14171d; --fg:#e6e9ef; --muted:#9aa3b2; --card:#1d222b; --line:#323946; --accent:#6aa3ff; --ok:#4cc38a; --warn:#e3b341; --err:#ff7b72; } }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { background:var(--card); border-bottom:1px solid var(--line); }
+.bar { max-width:880px; margin:0 auto; padding:10px 16px; display:flex; flex-wrap:wrap; gap:6px 18px; align-items:center; }
+.bar strong { margin-right:auto; }
+.bar a { color:var(--accent); text-decoration:none; }
+.bar form { margin:0; }
+main { max-width:880px; margin:0 auto; padding:16px; }
+h1 { font-size:1.35rem; margin:.2em 0 .6em; }
+h2 { font-size:1.05rem; margin:0 0 .6em; }
+section { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin:0 0 14px; }
+label { display:block; margin:.7em 0 .2em; font-weight:600; }
+.hint { color:var(--muted); font-size:.88rem; margin:.2em 0; }
+input[type=text], input[type=password], input[type=number], select, textarea { width:100%; max-width:420px; padding:7px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); font:inherit; }
+textarea { max-width:520px; min-height:5.5em; font-family:ui-monospace, Menlo, Consolas, monospace; font-size:.9rem; }
+.check { display:flex; gap:8px; align-items:center; font-weight:400; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:0 16px; }
+button, .button { padding:8px 14px; border:1px solid var(--accent); background:var(--accent); color:#fff; border-radius:6px; font:inherit; cursor:pointer; }
+button.secondary { background:transparent; color:var(--accent); }
+button.danger { background:var(--err); border-color:var(--err); }
+.bar button { padding:3px 10px; }
+.flash { padding:9px 12px; border-radius:6px; margin:0 0 10px; border:1px solid var(--line); background:var(--card); }
+.flash.ok { border-color:var(--ok); color:var(--ok); }
+.flash.warning { border-color:var(--warn); color:var(--warn); }
+.flash.error { border-color:var(--err); color:var(--err); }
+table.kv { border-collapse:collapse; width:100%; }
+table.kv th { text-align:left; width:11em; color:var(--muted); font-weight:500; padding:3px 8px 3px 0; vertical-align:top; }
+table.kv td { padding:3px 0; word-break:break-word; }
+.snapshot { max-width:100%; height:auto; border:1px solid var(--line); border-radius:6px; background:#000; }
+.subnav a { padding:4px 10px; border:1px solid var(--line); border-radius:6px; text-decoration:none; color:var(--accent); background:var(--card); }
+.subnav a.current { background:var(--accent); color:#fff; border-color:var(--accent); }
+.gallery { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+.gallery a { display:block; text-decoration:none; color:var(--muted); font-size:.8rem; }
+.gallery img { width:100%; height:auto; aspect-ratio:4/3; object-fit:cover; background:#000; border:1px solid var(--line); border-radius:6px; display:block; }
+.preview { image-rendering:pixelated; width:100%; max-width:384px; height:auto; border:1px solid var(--line); border-radius:6px; background:#000; }
+.state-active { color:var(--ok); } .state-failed, .state-inactive { color:var(--err); }
+pre.log { background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:10px; overflow:auto; max-height:70vh; font-size:.8rem; }
+.row { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
+</style>
+</head>
+<body>
+<header><div class="bar">
+<strong>Sportstracker+</strong>
+{% if logged_in() %}
+<a href="{{ url_for('dashboard') }}">Übersicht</a>
+<a href="{{ url_for('settings') }}">Einstellungen</a>
+<a href="{{ url_for('message_form') }}">Nachricht</a>
+<a href="{{ url_for('picture_form') }}">Bild</a>
+<a href="{{ url_for('satellites_form') }}">Satelliten</a>
+{% if camera_enabled() %}<a href="{{ url_for('camera_page') }}">Kamera</a>{% endif %}
+<a href="{{ url_for('system_page') }}">System</a>
+<a href="{{ url_for('password') }}">Zugang</a>
+<form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary" type="submit">Abmelden</button></form>
+{% endif %}
+</div></header>
+<main>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+{% endwith %}
+{% block content %}{% endblock %}
+<p class="hint">Sportstracker+ {{ version }}</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Galerie – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Kamera</h1>
+{% include "camera_nav.html" %}
+<section>
+<h2>Galerie</h2>
+<p class="hint">{{ photo_count }} Fotos, {{ usage }} von {{ limit }} MB belegt. Ist die Grenze erreicht, werden die ältesten Fotos automatisch gelöscht.</p>
+{% if photos %}
+<div class="gallery">
+{% for p in photos %}
+<a href="{{ url_for('camera_view_page', name=p.name) }}" title="{{ p.taken }}">
+<img src="{{ url_for('camera_thumb', name=p.name) }}" alt="Foto {{ p.taken }}" loading="lazy">
+<span>{{ p.taken }}</span>
+</a>
+{% endfor %}
+</div>
+{% if pages > 1 %}
+<p class="row">
+{% if page > 1 %}<a href="{{ url_for('camera_gallery_page', page=page - 1) }}">← neuere</a>{% endif %}
+<span>Seite {{ page }} von {{ pages }}</span>
+{% if page < pages %}<a href="{{ url_for('camera_gallery_page', page=page + 1) }}">ältere →</a>{% endif %}
+</p>
+{% endif %}
+{% else %}
+<p>Noch keine Fotos. Unter „Foto“ oder „Live-Ansicht“ kannst du welche aufnehmen.</p>
+{% endif %}
+</section>
+<section>
+<h2>Speicher</h2>
+<form method="post" action="{{ url_for('camera_gallery_limit') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label for="gallery_limit_mb">Speichergrenze der Galerie (MB)</label>
+<input type="number" id="gallery_limit_mb" name="gallery_limit_mb" min="10" max="4000" value="{{ limit }}">
+<p><button class="secondary" type="submit">Speichern</button></p>
+</form>
+{% if photos %}
+<form method="post" action="{{ url_for('camera_gallery_clear') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label class="check"><input type="checkbox" name="confirm" value="yes"> Ja, alle Fotos unwiderruflich löschen</label>
+<p><button class="danger" type="submit">Galerie leeren</button></p>
+</form>
+{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Bewegungsmelder – Sportstracker+{% endblock %}
+{% block head %}<meta http-equiv="refresh" content="3">{% endblock %}
+{% block content %}
+<h1>Kamera</h1>
+{% include "camera_nav.html" %}
+<section>
+<h2>Bewegungsmelder</h2>
+{% if not enabled %}
+<p>Der Bewegungsmelder ist ausgeschaltet. Er lässt sich auf der Seite „Live-Ansicht“ einschalten.</p>
+{% elif not status.active %}
+<p>Die Live-Ansicht läuft nicht, der Bewegungsmelder ist deshalb nicht aktiv. Er arbeitet nur, solange die Live-Ansicht offen ist.</p>
+{% else %}
+<table class="kv">
+<tr><th>Veränderung im Bild</th><td>{{ changed }} % (Schwelle {{ threshold }} %)</td></tr>
+<tr><th>Bewegungen seit Start</th><td>{{ status.count }}</td></tr>
+<tr><th>Letzte Bewegung</th><td>{% if last_age is none %}–{% else %}vor {{ last_age }} s{% endif %}{% if status.last_name %}, Foto <a href="{{ url_for('camera_view_page', name=status.last_name) }}">{{ status.last_name }}</a>{% endif %}</td></tr>
+<tr><th>Pause zwischen Fotos</th><td>{{ pause }}</td></tr>
+</table>
+{% if status.error %}<div class="flash error">Foto nicht gespeichert: {{ status.error }}</div>{% endif %}
+<p class="hint">Diese Seite aktualisiert sich alle 3 Sekunden. Liegt die Veränderung bei ruhigem Bild schon nahe an der Schwelle, die Empfindlichkeit verringern.</p>
+{% endif %}
+<p><a class="button" href="{{ url_for('camera_live_page', run=1) }}">Zur Live-Ansicht</a></p>
+</section>
+{% endblock %}

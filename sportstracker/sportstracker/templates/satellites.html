@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Satelliten – Sportstracker+{% endblock %}
+{% block content %}
+<h1>Satelliten</h1>
+<p class="hint">Bis zu {{ 3 }} kleine ESP32-Sensorstationen (DHT22 und MQ-135) in anderen Räumen. Ihre Werte erscheinen im Wechsel nach der Raumansicht, je Raum eine Seite mit Temperatur, Luftfeuchte und Luftqualität.</p>
+
+<form method="post" action="{{ url_for('satellites_save') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+<section>
+<h2>Anzeige</h2>
+<label class="check"><input type="checkbox" name="enabled" {% if sat.enabled %}checked{% endif %}> Satelliten auf der Matrix anzeigen</label>
+<label for="seconds">Anzeigedauer je Satellit (Sekunden)</label>
+<input id="seconds" type="number" name="seconds" min="3" max="120" step="1" value="{{ sat.seconds }}">
+<p class="hint">Die Seiten laufen in der spielfreien Zeit mit (Tabelle, Raumansicht, Satelliten, Nachricht, Bild). Werte, die älter als 10 Minuten sind, erscheinen als Striche.</p>
+</section>
+
+<section>
+<h2>Satelliten</h2>
+{% for row in rows %}
+<div style="margin:.6em 0; padding:.6em 0; border-top:1px solid var(--line);">
+<strong>Satellit {{ row.number }}</strong>
+{% if row.reading %}
+<span class="hint">{% if row.fresh %}letzte Werte vor {{ row.age }} s{% else %}keine aktuellen Werte (zuletzt vor {{ row.age }} s){% endif %}:
+{% if row.reading.temperature_c is not none %}{{ ("%.1f"|format(row.reading.temperature_c))|replace('.', ',') }} °C{% endif %}
+{% if row.reading.humidity_pct is not none %}, {{ row.reading.humidity_pct|round|int }} %{% endif %}
+{% if row.reading.gas_raw is not none %}, Gas {{ row.reading.gas_raw|round|int }}{% endif %}
+{% if row.quality %}, Luft {{ row.quality[1]|lower }} ({{ row.quality[0] }}){% endif %}</span>
+{% endif %}
+<div class="grid">
+<div>
+<label for="s{{ row.number }}_name">Name auf der Matrix (bis 10 Zeichen)</label>
+<input id="s{{ row.number }}_name" type="text" name="s{{ row.number }}_name" maxlength="10" value="{{ row.item.name }}">
+</div>
+<div>
+<label for="s{{ row.number }}_key">Kennung (a–z, 0–9, - _)</label>
+<input id="s{{ row.number }}_key" type="text" name="s{{ row.number }}_key" maxlength="20" value="{{ row.item.key }}" placeholder="aus dem Namen">
+</div>
+<div>
+<label for="s{{ row.number }}_token">Token (HTTP)</label>
+<input id="s{{ row.number }}_token" type="text" name="s{{ row.number }}_token" maxlength="64" value="{{ row.item.token }}" placeholder="wird erzeugt">
+</div>
+<div>
+<label for="s{{ row.number }}_topic">MQTT-Topic (leer = Standard)</label>
+<input id="s{{ row.number }}_topic" type="text" name="s{{ row.number }}_topic" maxlength="100" value="{{ row.item.topic }}" placeholder="{{ default_topic(row.item.key) }}">
+</div>
+<div>
+<label for="s{{ row.number }}_gas_clean">Gaswert saubere Luft</label>
+<input id="s{{ row.number }}_gas_clean" type="number" name="s{{ row.number }}_gas_clean" min="0" max="65535" value="{{ row.item.gas_clean }}">
+</div>
+<div>
+<label for="s{{ row.number }}_gas_bad">Gaswert schlechte Luft</label>
+<input id="s{{ row.number }}_gas_bad" type="number" name="s{{ row.number }}_gas_bad" min="0" max="65535" value="{{ row.item.gas_bad }}">
+</div>
+</div>
+<label class="check"><input type="checkbox" name="s{{ row.number }}_enabled" {% if row.item.enabled %}checked{% endif %}> Satellit aktiv</label>
+</div>
+{% endfor %}
+<p class="hint">Zeile leer lassen = kein Satellit. Der MQ-135 liefert nur einen Rohwert (höher = schlechtere Luft). Aus den beiden Gaswerten wird die Luftqualität berechnet (0 bis 100, ab 70 „gut“, ab 40 „mittel“, darunter „schlecht“). Die Werte für saubere und schlechte Luft hängen vom Einzelstück ab: den Rohwert in frischer Luft und neben einem Gaseinfluss (z. B. Atemluft, Alkohol-Tupfer) beobachten und hier eintragen. Sendet der Satellit selbst einen <code>air_index</code>, gilt dieser. Der MQ-135 braucht nach dem Einschalten einige Minuten Aufwärmzeit und ist kein geeichtes Messgerät: die Anzeige ist ein Trend, kein ppm-Wert.</p>
+</section>
+
+<section>
+<h2>MQTT (Home Assistant / Mosquitto)</h2>
+<label class="check"><input type="checkbox" name="mqtt_enabled" {% if sat.mqtt.enabled %}checked{% endif %}> Werte über MQTT empfangen</label>
+<div class="grid">
+<div>
+<label for="mqtt_host">Broker (Host oder IP)</label>
+<input id="mqtt_host" type="text" name="mqtt_host" maxlength="100" value="{{ sat.mqtt.host }}" placeholder="z. B. 192.168.22.30">
+</div>
+<div>
+<label for="mqtt_port">Port</label>
+<input id="mqtt_port" type="number" name="mqtt_port" min="1" max="65535" value="{{ sat.mqtt.port }}">
+</div>
+<div>
+<label for="mqtt_username">Benutzer</label>
+<input id="mqtt_username" type="text" name="mqtt_username" maxlength="64" value="{{ sat.mqtt.username }}" autocomplete="off">
+</div>
+<div>
+<label for="mqtt_password">Kennwort {% if sat.mqtt.password %}(gespeichert, leer lassen = behalten){% endif %}</label>
+<input id="mqtt_password" type="password" name="mqtt_password" maxlength="128" autocomplete="new-password">
+{% if sat.mqtt.password %}<label class="check"><input type="checkbox" name="mqtt_clear_password"> Kennwort löschen</label>{% endif %}
+</div>
+<div>
+<label for="mqtt_base_topic">Basis-Topic</label>
+<input id="mqtt_base_topic" type="text" name="mqtt_base_topic" maxlength="40" value="{{ sat.mqtt.base_topic }}">
+</div>
+</div>
+<p class="hint">Der Pi abonniert je Satellit <code>&lt;Basis-Topic&gt;/&lt;Kennung&gt;/state</code> (oder das eigene Topic). Der MQTT-Dienst (<code>sportstracker-mqtt</code>) übernimmt Änderungen ohne Neustart.</p>
+</section>
+
+<section>
+<h2>Anbindung der ESP32</h2>
+<p class="hint"><strong>HTTP:</strong> <code>POST http://{{ host }}/api/satellite/&lt;Kennung&gt;</code> mit Kopfzeile <code>Authorization: Bearer &lt;Token&gt;</code> und JSON <code>{"temperature":22.4,"humidity":45.1,"gas":812}</code> (optional <code>"air_index":78</code>). Das Backend läuft ohne HTTPS, der Token schützt nur im Heimnetz.</p>
+<p class="hint"><strong>MQTT:</strong> dasselbe JSON auf das State-Topic veröffentlichen. Der Sketch im Ordner <code>esp32/</code> kann beides und meldet die Sensoren per MQTT-Discovery an Home Assistant.</p>
+</section>
+
+<p><button type="submit">Speichern</button></p>
+</form>
+{% endblock %}
