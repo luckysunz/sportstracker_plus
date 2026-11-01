@@ -24,7 +24,9 @@ import threading
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from PIL import Image, ImageOps
+from PIL import Image, ImageFile, ImageOps
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True      # phone uploads that were cut off at the end are still shown (as far as they go)
 
 log = logging.getLogger(__name__)
 
@@ -79,23 +81,44 @@ def _flatten(image: Image.Image) -> Image.Image:
     return flat
 
 
+_HEIF_BRANDS = (b"heic", b"heix", b"hevc", b"hevx", b"heim", b"heis", b"mif1", b"msf1")
+_AVIF_BRANDS = (b"avif", b"avis")
+
+
+def _unsupported_phone_format(data: bytes) -> str:
+    """Name of a phone photo format Pillow cannot read (HEIC/AVIF often carry a .jpg name), else ''."""
+    if data[4:8] == b"ftyp":
+        brand = data[8:12]
+        if brand in _HEIF_BRANDS:
+            return "HEIC"
+        if brand in _AVIF_BRANDS:
+            return "AVIF"
+    return ""
+
+
 def convert_upload(data: bytes) -> Tuple[bytes, str]:
     """Check and convert an upload. Returns (PNG bytes, note for the user - may be empty)."""
     if not data:
         raise PictureError("Es wurde keine Datei übertragen.")
     if len(data) > MAX_UPLOAD_BYTES:
         raise PictureError("Die Datei ist größer als %d MB." % (MAX_UPLOAD_BYTES // (1024 * 1024)))
+    unsupported = _unsupported_phone_format(data)
+    if unsupported:
+        raise PictureError("Das Bild ist im Format %s (typisch für Android-Kameras, auch wenn die Datei .jpg heißt). "
+                           "Bitte als JPEG senden: Kamera-Einstellung „Hocheffiziente Bilder/HEIF“ ausschalten "
+                           "oder das Bild vor dem Hochladen als JPEG teilen/exportieren." % unsupported)
     try:
         image = Image.open(io.BytesIO(data), formats=FORMATS)
+        is_jpeg = image.format in ("JPEG", "MPO")      # MPO = JPEG with extra images (HDR gain map, depth) of newer phones
         width, height = image.size
-        limit = MAX_PIXELS_JPEG if image.format == "JPEG" else MAX_PIXELS
+        limit = MAX_PIXELS_JPEG if is_jpeg else MAX_PIXELS
         if width * height > limit:
             raise PictureError("Das Bild ist zu groß (%d x %d Pixel). Bitte vorher verkleinern." % (width, height))
-        count = getattr(image, "n_frames", 1)
+        count = 1 if is_jpeg else getattr(image, "n_frames", 1)     # only the main picture of an MPO file
         frames: List[Image.Image] = []
         durations: List[int] = []
         if count <= 1:
-            if image.format == "JPEG":
+            if is_jpeg:
                 image.draft("RGB", (SOURCE_MAX * 2, SOURCE_MAX * 2))
             image.load()
             frames.append(_flatten(ImageOps.exif_transpose(image)))
@@ -109,8 +132,8 @@ def convert_upload(data: bytes) -> Tuple[bytes, str]:
     except PictureError:
         raise
     except Exception as exc:  # noqa: BLE001 - Pillow raises many kinds of errors for broken files
-        log.info("upload not readable: %s", exc)
-        raise PictureError("Die Datei ist kein lesbares Bild (erlaubt: JPEG, PNG, GIF, WebP).")
+        log.warning("upload not readable: %s: %s (first bytes %r, %d bytes)", type(exc).__name__, exc, data[:16], len(data))
+        raise PictureError("Die Datei ist kein lesbares Bild (erlaubt: JPEG, PNG, GIF, WebP). Technisch: %s." % type(exc).__name__)
     out = io.BytesIO()
     if len(frames) == 1:
         frames[0].save(out, format="PNG", optimize=True)
